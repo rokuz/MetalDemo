@@ -1,0 +1,350 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		EB0958171A73CAC700E722D0 /* rokuzlogo.png in Resources */ = {isa = PBXBuildFile; fileRef = EB0958161A73CAC700E722D0 /* rokuzlogo.png */; };
+		EB09581A1A73D1DC00E722D0 /* RenderView.mm in Sources */ = {isa = PBXBuildFile; fileRef = EB0958191A73D1DC00E722D0 /* RenderView.mm */; };
+		EB09581E1A7409E600E722D0 /* ArcballCamera.mm in Sources */ = {isa = PBXBuildFile; fileRef = EB09581D1A7409E600E722D0 /* ArcballCamera.mm */; };
+		EB0958211A7426E000E722D0 /* Quaternion.mm in Sources */ = {isa = PBXBuildFile; fileRef = EB0958201A7426E000E722D0 /* Quaternion.mm */; };
+		EBE86E331A72BE5200D1880C /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = EBE86E321A72BE5200D1880C /* main.m */; };
+		EBE86E361A72BE5200D1880C /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = EBE86E351A72BE5200D1880C /* AppDelegate.m */; };
+		EBE86E391A72BE5200D1880C /* RenderViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = EBE86E381A72BE5200D1880C /* RenderViewController.mm */; };
+		EBE86E3B1A72BE5200D1880C /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = EBE86E3A1A72BE5200D1880C /* Shaders.metal */; };
+		EBE86E3E1A72BE5200D1880C /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EBE86E3C1A72BE5200D1880C /* Main.storyboard */; };
+		EBE86E401A72BE5200D1880C /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EBE86E3F1A72BE5200D1880C /* Images.xcassets */; };
+		EBE86E431A72BE5200D1880C /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = EBE86E411A72BE5200D1880C /* LaunchScreen.xib */; };
+		EBE86E8C1A72C5EA00D1880C /* Math.mm in Sources */ = {isa = PBXBuildFile; fileRef = EBE86E8B1A72C5EA00D1880C /* Math.mm */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		EB0958161A73CAC700E722D0 /* rokuzlogo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = rokuzlogo.png; path = Images.xcassets/rokuzlogo.png; sourceTree = "<group>"; };
+		EB0958181A73D1A500E722D0 /* RenderView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RenderView.h; sourceTree = "<group>"; };
+		EB0958191A73D1DC00E722D0 /* RenderView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = RenderView.mm; sourceTree = "<group>"; };
+		EB09581C1A7409E600E722D0 /* ArcballCamera.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ArcballCamera.h; path = MetalDemo/camera/ArcballCamera.h; sourceTree = "<group>"; };
+		EB09581D1A7409E600E722D0 /* ArcballCamera.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = ArcballCamera.mm; path = MetalDemo/camera/ArcballCamera.mm; sourceTree = "<group>"; };
+		EB09581F1A741E6F00E722D0 /* Quaternion.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Quaternion.h; path = math/Quaternion.h; sourceTree = "<group>"; };
+		EB0958201A7426E000E722D0 /* Quaternion.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = Quaternion.mm; path = math/Quaternion.mm; sourceTree = "<group>"; };
+		EBE86E2D1A72BE5100D1880C /* MetalDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MetalDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EBE86E311A72BE5100D1880C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		EBE86E321A72BE5200D1880C /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		EBE86E341A72BE5200D1880C /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		EBE86E351A72BE5200D1880C /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		EBE86E371A72BE5200D1880C /* RenderViewController.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.h; path = RenderViewController.h; sourceTree = "<group>"; };
+		EBE86E381A72BE5200D1880C /* RenderViewController.mm */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.objcpp; path = RenderViewController.mm; sourceTree = "<group>"; };
+		EBE86E3A1A72BE5200D1880C /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
+		EBE86E3D1A72BE5200D1880C /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		EBE86E3F1A72BE5200D1880C /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
+		EBE86E421A72BE5200D1880C /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/LaunchScreen.xib; sourceTree = "<group>"; };
+		EBE86E8A1A72C5EA00D1880C /* Math.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Math.h; path = math/Math.h; sourceTree = "<group>"; };
+		EBE86E8B1A72C5EA00D1880C /* Math.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = Math.mm; path = math/Math.mm; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		EBE86E2A1A72BE5100D1880C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		EB09581B1A7409D600E722D0 /* camera */ = {
+			isa = PBXGroup;
+			children = (
+				EB09581C1A7409E600E722D0 /* ArcballCamera.h */,
+				EB09581D1A7409E600E722D0 /* ArcballCamera.mm */,
+			);
+			name = camera;
+			sourceTree = "<group>";
+		};
+		EBE86E241A72BE5100D1880C = {
+			isa = PBXGroup;
+			children = (
+				EB09581B1A7409D600E722D0 /* camera */,
+				EBE86E2F1A72BE5100D1880C /* MetalDemo */,
+				EBE86E2E1A72BE5100D1880C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		EBE86E2E1A72BE5100D1880C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				EBE86E2D1A72BE5100D1880C /* MetalDemo.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		EBE86E2F1A72BE5100D1880C /* MetalDemo */ = {
+			isa = PBXGroup;
+			children = (
+				EBE86E341A72BE5200D1880C /* AppDelegate.h */,
+				EB0958181A73D1A500E722D0 /* RenderView.h */,
+				EBE86E371A72BE5200D1880C /* RenderViewController.h */,
+				EBE86E351A72BE5200D1880C /* AppDelegate.m */,
+				EBE86E3A1A72BE5200D1880C /* Shaders.metal */,
+				EB0958191A73D1DC00E722D0 /* RenderView.mm */,
+				EBE86E381A72BE5200D1880C /* RenderViewController.mm */,
+				EBE86E891A72C59000D1880C /* math */,
+				EBE86E301A72BE5100D1880C /* Supporting Files */,
+			);
+			path = MetalDemo;
+			sourceTree = "<group>";
+		};
+		EBE86E301A72BE5100D1880C /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				EBE86E3C1A72BE5200D1880C /* Main.storyboard */,
+				EBE86E3F1A72BE5200D1880C /* Images.xcassets */,
+				EB0958161A73CAC700E722D0 /* rokuzlogo.png */,
+				EBE86E411A72BE5200D1880C /* LaunchScreen.xib */,
+				EBE86E311A72BE5100D1880C /* Info.plist */,
+				EBE86E321A72BE5200D1880C /* main.m */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		EBE86E891A72C59000D1880C /* math */ = {
+			isa = PBXGroup;
+			children = (
+				EBE86E8A1A72C5EA00D1880C /* Math.h */,
+				EBE86E8B1A72C5EA00D1880C /* Math.mm */,
+				EB09581F1A741E6F00E722D0 /* Quaternion.h */,
+				EB0958201A7426E000E722D0 /* Quaternion.mm */,
+			);
+			name = math;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		EBE86E2C1A72BE5100D1880C /* MetalDemo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EBE86E521A72BE5300D1880C /* Build configuration list for PBXNativeTarget "MetalDemo" */;
+			buildPhases = (
+				EBE86E291A72BE5100D1880C /* Sources */,
+				EBE86E2A1A72BE5100D1880C /* Frameworks */,
+				EBE86E2B1A72BE5100D1880C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MetalDemo;
+			productName = MetalDemo;
+			productReference = EBE86E2D1A72BE5100D1880C /* MetalDemo.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		EBE86E251A72BE5100D1880C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0610;
+				ORGANIZATIONNAME = rokuz;
+				TargetAttributes = {
+					EBE86E2C1A72BE5100D1880C = {
+						CreatedOnToolsVersion = 6.1.1;
+					};
+				};
+			};
+			buildConfigurationList = EBE86E281A72BE5100D1880C /* Build configuration list for PBXProject "MetalDemo" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = EBE86E241A72BE5100D1880C;
+			productRefGroup = EBE86E2E1A72BE5100D1880C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				EBE86E2C1A72BE5100D1880C /* MetalDemo */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		EBE86E2B1A72BE5100D1880C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EB0958171A73CAC700E722D0 /* rokuzlogo.png in Resources */,
+				EBE86E3E1A72BE5200D1880C /* Main.storyboard in Resources */,
+				EBE86E431A72BE5200D1880C /* LaunchScreen.xib in Resources */,
+				EBE86E401A72BE5200D1880C /* Images.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		EBE86E291A72BE5100D1880C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EBE86E3B1A72BE5200D1880C /* Shaders.metal in Sources */,
+				EBE86E361A72BE5200D1880C /* AppDelegate.m in Sources */,
+				EB09581E1A7409E600E722D0 /* ArcballCamera.mm in Sources */,
+				EB09581A1A73D1DC00E722D0 /* RenderView.mm in Sources */,
+				EBE86E391A72BE5200D1880C /* RenderViewController.mm in Sources */,
+				EB0958211A7426E000E722D0 /* Quaternion.mm in Sources */,
+				EBE86E331A72BE5200D1880C /* main.m in Sources */,
+				EBE86E8C1A72C5EA00D1880C /* Math.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		EBE86E3C1A72BE5200D1880C /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				EBE86E3D1A72BE5200D1880C /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		EBE86E411A72BE5200D1880C /* LaunchScreen.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				EBE86E421A72BE5200D1880C /* Base */,
+			);
+			name = LaunchScreen.xib;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		EBE86E501A72BE5300D1880C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.1;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		EBE86E511A72BE5300D1880C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.1;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		EBE86E531A72BE5300D1880C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				INFOPLIST_FILE = MetalDemo/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		EBE86E541A72BE5300D1880C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				INFOPLIST_FILE = MetalDemo/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		EBE86E281A72BE5100D1880C /* Build configuration list for PBXProject "MetalDemo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EBE86E501A72BE5300D1880C /* Debug */,
+				EBE86E511A72BE5300D1880C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EBE86E521A72BE5300D1880C /* Build configuration list for PBXNativeTarget "MetalDemo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EBE86E531A72BE5300D1880C /* Debug */,
+				EBE86E541A72BE5300D1880C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = EBE86E251A72BE5100D1880C /* Project object */;
+}
