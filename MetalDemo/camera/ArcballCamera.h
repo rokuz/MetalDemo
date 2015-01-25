@@ -17,6 +17,8 @@ class ArcballCamera
 {
 public:
     ArcballCamera();
+    
+    void init(float xangle, float yangle, float distance);
 
     void startRotation(float xpos, float ypos);
     void updateRotation(float xpos, float ypos);

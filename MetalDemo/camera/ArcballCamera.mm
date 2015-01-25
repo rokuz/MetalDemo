@@ -35,6 +35,21 @@ void ArcballCamera::reset()
     rotation.ident();
 }
 
+void ArcballCamera::init(float xangle, float yangle, float distance)
+{
+    currentDistance = distance;
+    angles.x = xangle;
+    angles.y = yangle;
+    if (angles.y > 89.9f) angles.y = 89.9f;
+    if (angles.y < -89.9) angles.y = -89.9f;
+    
+    quaternion q1;
+    q1.set_rotate_axis_angle(simd::float3 { 0, 1, 0 }, Math::deg2Rad(angles.x));
+    quaternion q2;
+    q2.set_rotate_axis_angle(simd::float3 { 1, 0, 0 }, Math::deg2Rad(angles.y));
+    rotation = q1 * q2;
+}
+
 void ArcballCamera::startRotation(float xpos, float ypos)
 {
     if (isZooming || isRotating) return;

@@ -177,6 +177,7 @@ typedef struct
 - (void)configure:(RenderView*)renderView
 {
     renderView.sampleCount = 1;
+    camera.init(30.0f, -20.0f, 3.0f);
 }
 
 - (void)setupMetal:(id<MTLDevice>)device
