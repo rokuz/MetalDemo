@@ -52,6 +52,7 @@ typedef struct
     id <MTLDepthStencilState> _depthState;
     id <MTLBuffer> _dynamicUniformBuffer;
     uint8_t _currentUniformBufferIndex;
+    dispatch_semaphore_t _renderThreadSemaphore;
     
     // uniforms
     matrix_float4x4 _projectionMatrix;
@@ -113,6 +114,7 @@ typedef struct
     
     _currentUniformBufferIndex = 0;
     _inflightSemaphore = dispatch_semaphore_create(MAX_INFLIGHT_BUFFERS);
+    _renderThreadSemaphore = dispatch_semaphore_create(0);
     
     [self setupMetal: ((RenderView*)self.view).device];
     [self startTimer];
@@ -245,22 +247,32 @@ typedef struct
     id <MTLCommandBuffer> commandBuffer = [_commandQueue commandBuffer];
     commandBuffer.label = @"Simple command buffer";
     
-    // simple render encoder
-    id <MTLRenderCommandEncoder> renderEncoder = [commandBuffer renderCommandEncoderWithDescriptor: renderPassDescriptor];
-    renderEncoder.label = @"Simple render encoder";
-    [renderEncoder setDepthStencilState:_depthState];
-    [renderEncoder pushDebugGroup:@"Draw cubes"];
-    [renderEncoder setRenderPipelineState:_pipelineState];
-    [renderEncoder setVertexBuffer:_vertexBuffer offset:0 atIndex:0 ];
-    for (int i = 0; i < CUBE_COUNTS; i++)
+    // parallel render encoder
+    id <MTLParallelRenderCommandEncoder> parallelRCE = [commandBuffer parallelRenderCommandEncoderWithDescriptor:renderPassDescriptor];
+    parallelRCE.label = @"Parallel render encoder";
+    id <MTLRenderCommandEncoder> rCE1 = [parallelRCE renderCommandEncoder];
+    id <MTLRenderCommandEncoder> rCE2 = [parallelRCE renderCommandEncoder];
+    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
     {
-        [renderEncoder setVertexBuffer:_dynamicUniformBuffer
-                                offset:(sizeof(_uniform_buffer) * _currentUniformBufferIndex + i * sizeof(uniforms_t))
-                               atIndex:1 ];
-        [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:36 instanceCount:1];
-    }
-    [renderEncoder popDebugGroup];
-    [renderEncoder endEncoding];
+        @autoreleasepool
+        {
+            [self encodeRenderCommands: rCE2
+                               Comment: @"Draw cubes in additional thread"
+                            StartIndex: CUBE_COUNTS / 2
+                              EndIndex: CUBE_COUNTS];
+        }
+        dispatch_semaphore_signal(_renderThreadSemaphore);
+    });
+    
+    [self encodeRenderCommands: rCE1
+                       Comment: @"Draw cubes"
+                    StartIndex: 0
+                      EndIndex: CUBE_COUNTS / 2];
+
+    // wait additional thread and finish encoding
+    dispatch_semaphore_wait(_renderThreadSemaphore, DISPATCH_TIME_FOREVER);
+    [parallelRCE endEncoding];
     
     __block dispatch_semaphore_t block_sema = _inflightSemaphore;
     [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer) {
@@ -270,6 +282,26 @@ typedef struct
     _currentUniformBufferIndex = (_currentUniformBufferIndex + 1) % MAX_INFLIGHT_BUFFERS;
     [commandBuffer presentDrawable:drawable];
     [commandBuffer commit];
+}
+
+- (void)encodeRenderCommands:(id <MTLRenderCommandEncoder>)renderEncoder
+                     Comment:(NSString*)comment
+                  StartIndex:(int)startIndex
+                    EndIndex:(int)endIndex
+{
+    [renderEncoder setDepthStencilState:_depthState];
+    [renderEncoder pushDebugGroup:comment];
+    [renderEncoder setRenderPipelineState:_pipelineState];
+    [renderEncoder setVertexBuffer:_vertexBuffer offset:0 atIndex:0 ];
+    for (int i = startIndex; i < endIndex; i++)
+    {
+        [renderEncoder setVertexBuffer:_dynamicUniformBuffer
+                                offset:(sizeof(_uniform_buffer) * _currentUniformBufferIndex + i * sizeof(uniforms_t))
+                               atIndex:1 ];
+        [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:36 instanceCount:1];
+    }
+    [renderEncoder popDebugGroup];
+    [renderEncoder endEncoding];
 }
 
 - (void)resize:(RenderView*)renderView
