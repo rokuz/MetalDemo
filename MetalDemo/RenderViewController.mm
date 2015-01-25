@@ -15,7 +15,16 @@
 #import <QuartzCore/CAMetalLayer.h>
 
 static const NSUInteger MAX_INFLIGHT_BUFFERS = 3;
-static const size_t MAX_UNIFORM_BUFFER_SIZE = 1024 * 1024;
+
+static const int CUBE_COUNTS = 5;
+simd::float3 CUBES_POSITIONS[CUBE_COUNTS] =
+{
+    simd::float3 { 0.0f, 0.0f, 0.0f },
+    simd::float3 { 0.0f, 0.0f, 2.0f },
+    simd::float3 { 0.0f, 0.0f, -2.0f },
+    simd::float3 { 2.0f, 0.0f, 0.0f },
+    simd::float3 { -2.0f, 0.0f, 0.0f }
+};
 
 typedef struct
 {
@@ -47,7 +56,7 @@ typedef struct
     // uniforms
     matrix_float4x4 _projectionMatrix;
     matrix_float4x4 _viewMatrix;
-    uniforms_t _uniform_buffer;
+    uniforms_t _uniform_buffer[CUBE_COUNTS];
 }
 
 #pragma mark - Infrastructure
@@ -177,7 +186,7 @@ typedef struct
 - (void)configure:(RenderView*)renderView
 {
     renderView.sampleCount = 1;
-    camera.init(30.0f, -20.0f, 3.0f);
+    camera.init(30.0f, -20.0f, 5.0f);
 }
 
 - (void)setupMetal:(id<MTLDevice>)device
@@ -190,7 +199,8 @@ typedef struct
 
 - (void)loadAssets:(id<MTLDevice>)device
 {
-    _dynamicUniformBuffer = [device newBufferWithLength:MAX_UNIFORM_BUFFER_SIZE options:0];
+    NSUInteger sz = sizeof(_uniform_buffer) * MAX_INFLIGHT_BUFFERS;
+    _dynamicUniformBuffer = [device newBufferWithLength:sz options:0];
     _dynamicUniformBuffer.label = @"Uniform buffer";
 
     id <MTLFunction> fragmentProgram = [_defaultLibrary newFunctionWithName:@"psLighting"];
@@ -239,11 +249,16 @@ typedef struct
     id <MTLRenderCommandEncoder> renderEncoder = [commandBuffer renderCommandEncoderWithDescriptor: renderPassDescriptor];
     renderEncoder.label = @"Simple render encoder";
     [renderEncoder setDepthStencilState:_depthState];
-    [renderEncoder pushDebugGroup:@"Draw cube"];
+    [renderEncoder pushDebugGroup:@"Draw cubes"];
     [renderEncoder setRenderPipelineState:_pipelineState];
     [renderEncoder setVertexBuffer:_vertexBuffer offset:0 atIndex:0 ];
-    [renderEncoder setVertexBuffer:_dynamicUniformBuffer offset:(sizeof(uniforms_t) * _currentUniformBufferIndex) atIndex:1 ];
-    [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:36 instanceCount:1];
+    for (int i = 0; i < CUBE_COUNTS; i++)
+    {
+        [renderEncoder setVertexBuffer:_dynamicUniformBuffer
+                                offset:(sizeof(_uniform_buffer) * _currentUniformBufferIndex + i * sizeof(uniforms_t))
+                               atIndex:1 ];
+        [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:36 instanceCount:1];
+    }
     [renderEncoder popDebugGroup];
     [renderEncoder endEncoding];
     
@@ -268,15 +283,18 @@ typedef struct
 {
     _viewMatrix = camera.getView();
     
-    matrix_float4x4 model = Math::translate(0.0f, 0.0f, 0.0f);
-    matrix_float4x4 modelViewMatrix = matrix_multiply(_viewMatrix, model);
+    for (int i = 0; i < CUBE_COUNTS; i++)
+    {
+        matrix_float4x4 model = Math::translate(CUBES_POSITIONS[i]);
+        matrix_float4x4 modelViewMatrix = matrix_multiply(_viewMatrix, model);
     
-    _uniform_buffer.model = model;
-    _uniform_buffer.modelViewProjection = matrix_multiply(_projectionMatrix, modelViewMatrix);
-    _uniform_buffer.viewPosition = camera.getCurrentViewPosition();
+        _uniform_buffer[i].model = model;
+        _uniform_buffer[i].modelViewProjection = matrix_multiply(_projectionMatrix, modelViewMatrix);
+        _uniform_buffer[i].viewPosition = camera.getCurrentViewPosition();
+    }
     
-    uint8_t* bufferPointer = (uint8_t*)[_dynamicUniformBuffer contents] + (sizeof(uniforms_t) * _currentUniformBufferIndex);
-    memcpy(bufferPointer, &_uniform_buffer, sizeof(uniforms_t));
+    uint8_t* bufferPointer = (uint8_t*)[_dynamicUniformBuffer contents] + (sizeof(_uniform_buffer) * _currentUniformBufferIndex);
+    memcpy(bufferPointer, &_uniform_buffer, sizeof(_uniform_buffer));
 }
 
 #pragma mark - Input handling
