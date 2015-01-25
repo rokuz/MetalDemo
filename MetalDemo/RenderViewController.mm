@@ -9,6 +9,7 @@
 #import "RenderViewController.h"
 #import "math/Math.h"
 #import "camera/ArcballCamera.h"
+#import "geometry/Primitives.h"
 
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
@@ -16,57 +17,11 @@
 static const NSUInteger MAX_INFLIGHT_BUFFERS = 3;
 static const size_t MAX_UNIFORM_BUFFER_SIZE = 1024 * 1024;
 
-float cubeVertexData[216] =
-{
-    // Data layout for each line below is:
-    // positionX, positionY, positionZ,     normalX, normalY, normalZ,
-    0.5, -0.5, 0.5,   0.0, -1.0,  0.0,
-    -0.5, -0.5, 0.5,   0.0, -1.0, 0.0,
-    -0.5, -0.5, -0.5,   0.0, -1.0,  0.0,
-    0.5, -0.5, -0.5,  0.0, -1.0,  0.0,
-    0.5, -0.5, 0.5,   0.0, -1.0,  0.0,
-    -0.5, -0.5, -0.5,   0.0, -1.0,  0.0,
-    
-    0.5, 0.5, 0.5,    1.0, 0.0,  0.0,
-    0.5, -0.5, 0.5,   1.0,  0.0,  0.0,
-    0.5, -0.5, -0.5,  1.0,  0.0,  0.0,
-    0.5, 0.5, -0.5,   1.0, 0.0,  0.0,
-    0.5, 0.5, 0.5,    1.0, 0.0,  0.0,
-    0.5, -0.5, -0.5,  1.0,  0.0,  0.0,
-    
-    -0.5, 0.5, 0.5,    0.0, 1.0,  0.0,
-    0.5, 0.5, 0.5,    0.0, 1.0,  0.0,
-    0.5, 0.5, -0.5,   0.0, 1.0,  0.0,
-    -0.5, 0.5, -0.5,   0.0, 1.0,  0.0,
-    -0.5, 0.5, 0.5,    0.0, 1.0,  0.0,
-    0.5, 0.5, -0.5,   0.0, 1.0,  0.0,
-    
-    -0.5, -0.5, 0.5,  -1.0,  0.0, 0.0,
-    -0.5, 0.5, 0.5,   -1.0, 0.0,  0.0,
-    -0.5, 0.5, -0.5,  -1.0, 0.0,  0.0,
-    -0.5, -0.5, -0.5,  -1.0,  0.0,  0.0,
-    -0.5, -0.5, 0.5,  -1.0,  0.0, 0.0,
-    -0.5, 0.5, -0.5,  -1.0, 0.0,  0.0,
-    
-    0.5, 0.5,  0.5,  0.0, 0.0,  1.0,
-    -0.5, 0.5,  0.5,  0.0, 0.0,  1.0,
-    -0.5, -0.5, 0.5,   0.0,  0.0, 1.0,
-    -0.5, -0.5, 0.5,   0.0,  0.0, 1.0,
-    0.5, -0.5, 0.5,   0.0,  0.0,  1.0,
-    0.5, 0.5,  0.5,  0.0, 0.0,  1.0,
-    
-    0.5, -0.5, -0.5,  0.0,  0.0, -1.0,
-    -0.5, -0.5, -0.5,   0.0,  0.0, -1.0,
-    -0.5, 0.5, -0.5,  0.0, 0.0, -1.0,
-    0.5, 0.5, -0.5,  0.0, 0.0, -1.0,
-    0.5, -0.5, -0.5,  0.0,  0.0, -1.0,
-    -0.5, 0.5, -0.5,  0.0, 0.0, -1.0
-};
-
 typedef struct
 {
     matrix_float4x4 modelViewProjection;
-    matrix_float4x4 normalMatrix;
+    matrix_float4x4 model;
+    simd::float3 viewPosition;
 } uniforms_t;
 
 @implementation RenderViewController
@@ -78,6 +33,7 @@ typedef struct
     BOOL _firstFrameRendered;
     CFTimeInterval _lastTime;
     CFTimeInterval _frameTime;
+    ArcballCamera camera;
     
     // renderer
     id <MTLCommandQueue> _commandQueue;
@@ -86,9 +42,7 @@ typedef struct
     id <MTLBuffer> _vertexBuffer;
     id <MTLDepthStencilState> _depthState;
     id <MTLBuffer> _dynamicUniformBuffer;
-    uint8_t _constantDataBufferIndex;
-    
-    ArcballCamera camera;
+    uint8_t _currentUniformBufferIndex;
     
     // uniforms
     matrix_float4x4 _projectionMatrix;
@@ -148,7 +102,7 @@ typedef struct
     ((RenderView*)self.view).delegate = self;
     [self configure: (RenderView*)self.view];
     
-    _constantDataBufferIndex = 0;
+    _currentUniformBufferIndex = 0;
     _inflightSemaphore = dispatch_semaphore_create(MAX_INFLIGHT_BUFFERS);
     
     [self setupMetal: ((RenderView*)self.view).device];
@@ -238,10 +192,12 @@ typedef struct
     _dynamicUniformBuffer = [device newBufferWithLength:MAX_UNIFORM_BUFFER_SIZE options:0];
     _dynamicUniformBuffer.label = @"Uniform buffer";
 
-    id <MTLFunction> fragmentProgram = [_defaultLibrary newFunctionWithName:@"lighting_fragment"];
-    id <MTLFunction> vertexProgram = [_defaultLibrary newFunctionWithName:@"lighting_vertex"];
+    id <MTLFunction> fragmentProgram = [_defaultLibrary newFunctionWithName:@"psLighting"];
+    id <MTLFunction> vertexProgram = [_defaultLibrary newFunctionWithName:@"vsLighting"];
     
-    _vertexBuffer = [device newBufferWithBytes:cubeVertexData length:sizeof(cubeVertexData) options:MTLResourceOptionCPUCacheModeDefault];
+    _vertexBuffer = [device newBufferWithBytes:(Primitives::cube())
+                                        length:(Primitives::cubeSizeInBytes())
+                                       options:MTLResourceOptionCPUCacheModeDefault];
     _vertexBuffer.label = @"Cube vertex buffer";
     
     // pipeline state
@@ -285,7 +241,7 @@ typedef struct
     [renderEncoder pushDebugGroup:@"Draw cube"];
     [renderEncoder setRenderPipelineState:_pipelineState];
     [renderEncoder setVertexBuffer:_vertexBuffer offset:0 atIndex:0 ];
-    [renderEncoder setVertexBuffer:_dynamicUniformBuffer offset:(sizeof(uniforms_t) * _constantDataBufferIndex) atIndex:1 ];
+    [renderEncoder setVertexBuffer:_dynamicUniformBuffer offset:(sizeof(uniforms_t) * _currentUniformBufferIndex) atIndex:1 ];
     [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:36 instanceCount:1];
     [renderEncoder popDebugGroup];
     [renderEncoder endEncoding];
@@ -295,7 +251,7 @@ typedef struct
         dispatch_semaphore_signal(block_sema);
     }];
     
-    _constantDataBufferIndex = (_constantDataBufferIndex + 1) % MAX_INFLIGHT_BUFFERS;
+    _currentUniformBufferIndex = (_currentUniformBufferIndex + 1) % MAX_INFLIGHT_BUFFERS;
     [commandBuffer presentDrawable:drawable];
     [commandBuffer commit];
 }
@@ -314,10 +270,11 @@ typedef struct
     matrix_float4x4 model = Math::translate(0.0f, 0.0f, 0.0f);
     matrix_float4x4 modelViewMatrix = matrix_multiply(_viewMatrix, model);
     
-    _uniform_buffer.normalMatrix = matrix_invert(matrix_transpose(modelViewMatrix));
+    _uniform_buffer.model = model;
     _uniform_buffer.modelViewProjection = matrix_multiply(_projectionMatrix, modelViewMatrix);
+    _uniform_buffer.viewPosition = camera.getCurrentViewPosition();
     
-    uint8_t* bufferPointer = (uint8_t*)[_dynamicUniformBuffer contents] + (sizeof(uniforms_t) * _constantDataBufferIndex);
+    uint8_t* bufferPointer = (uint8_t*)[_dynamicUniformBuffer contents] + (sizeof(uniforms_t) * _currentUniformBufferIndex);
     memcpy(bufferPointer, &_uniform_buffer, sizeof(uniforms_t));
 }
 
@@ -358,8 +315,7 @@ typedef struct
     NSArray* touchesArray = [touches allObjects];
     if (touches.count != 0 && camera.isRotatingNow())
     {
-        simd::float2 lastPos = camera.getLastFingerPosition();
-        CGPoint pos = [self findNearestTouches:touchesArray X:lastPos.x Y:lastPos.y];
+        CGPoint pos = [touchesArray[0] locationInView: self.view];
         camera.updateRotation(pos.x, pos.y);
     }
     else if (touches.count == 2 && camera.isZoomingNow())
@@ -370,25 +326,6 @@ typedef struct
                                   simd::float2 { (float)pos2.x, (float)pos2.y });
         camera.updateZooming(d);
     }
-}
-
-- (CGPoint)findNearestTouches:(NSArray*)touches X:(float)x Y:(float)y
-{
-    int minIndex = 0;
-    CGPoint pos = [touches[minIndex] locationInView: self.view];
-    simd::float2 pnt = simd::float2 { x, y };
-    float min_d = vector_distance_squared(simd::float2 { (float)pos.x, (float)pos.y }, pnt);
-    for (int i = 1; i < touches.count; i++)
-    {
-        CGPoint p = [touches[i] locationInView: self.view];
-        float d = vector_distance_squared(simd::float2 { (float)p.x, (float)p.y }, pnt);
-        if (d < min_d)
-        {
-            min_d = d;
-            minIndex = i;
-        }
-    }
-    return [touches[minIndex] locationInView: self.view];
 }
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event

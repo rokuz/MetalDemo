@@ -27,6 +27,7 @@ public:
     void stopZooming();
     
     matrix_float4x4 getView();
+    simd::float3 getCurrentViewPosition() const;
     
     simd::float2 getLastFingerPosition() const;
     bool isRotatingNow() const;
@@ -44,6 +45,8 @@ private:
     bool isZooming;
     float lastDistance;
     float currentDistance;
+    
+    simd::float3 currentViewPosition;
 };
 
 #endif

@@ -31,6 +31,7 @@ ArcballCamera::ArcballCamera()
 
 void ArcballCamera::reset()
 {
+    currentViewPosition = simd::float3 { 0, 0, 0 };
     rotation.ident();
 }
 
@@ -105,7 +106,8 @@ matrix_float4x4 ArcballCamera::getView()
     }
     
     simd::float3 v = rotation.z_direction();
-    matrix_float4x4 viewMatrix = Math::lookAt(currentDistance * (simd::float3){v.x, v.y, v.z}, (simd::float3){0, 0, 0}, (simd::float3){0, 1, 0});
+    currentViewPosition = currentDistance * (simd::float3){v.x, v.y, v.z};
+    matrix_float4x4 viewMatrix = Math::lookAt(currentViewPosition, (simd::float3){0, 0, 0}, (simd::float3){0, 1, 0});
     
     return viewMatrix;
 }
@@ -123,6 +125,11 @@ bool ArcballCamera::isRotatingNow() const
 bool ArcballCamera::isZoomingNow() const
 {
     return isZooming;
+}
+
+simd::float3 ArcballCamera::getCurrentViewPosition() const
+{
+    return currentViewPosition;
 }
 
 #endif

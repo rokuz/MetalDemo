@@ -11,6 +11,7 @@
 		EB09581A1A73D1DC00E722D0 /* RenderView.mm in Sources */ = {isa = PBXBuildFile; fileRef = EB0958191A73D1DC00E722D0 /* RenderView.mm */; };
 		EB09581E1A7409E600E722D0 /* ArcballCamera.mm in Sources */ = {isa = PBXBuildFile; fileRef = EB09581D1A7409E600E722D0 /* ArcballCamera.mm */; };
 		EB0958211A7426E000E722D0 /* Quaternion.mm in Sources */ = {isa = PBXBuildFile; fileRef = EB0958201A7426E000E722D0 /* Quaternion.mm */; };
+		EBE5E7A11A74CA0800C23AE8 /* Primitives.mm in Sources */ = {isa = PBXBuildFile; fileRef = EBE5E7A01A74CA0800C23AE8 /* Primitives.mm */; };
 		EBE86E331A72BE5200D1880C /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = EBE86E321A72BE5200D1880C /* main.m */; };
 		EBE86E361A72BE5200D1880C /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = EBE86E351A72BE5200D1880C /* AppDelegate.m */; };
 		EBE86E391A72BE5200D1880C /* RenderViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = EBE86E381A72BE5200D1880C /* RenderViewController.mm */; };
@@ -29,6 +30,8 @@
 		EB09581D1A7409E600E722D0 /* ArcballCamera.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = ArcballCamera.mm; path = MetalDemo/camera/ArcballCamera.mm; sourceTree = "<group>"; };
 		EB09581F1A741E6F00E722D0 /* Quaternion.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Quaternion.h; path = math/Quaternion.h; sourceTree = "<group>"; };
 		EB0958201A7426E000E722D0 /* Quaternion.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = Quaternion.mm; path = math/Quaternion.mm; sourceTree = "<group>"; };
+		EBE5E79F1A74CA0800C23AE8 /* Primitives.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Primitives.h; path = MetalDemo/geometry/Primitives.h; sourceTree = "<group>"; };
+		EBE5E7A01A74CA0800C23AE8 /* Primitives.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = Primitives.mm; path = MetalDemo/geometry/Primitives.mm; sourceTree = "<group>"; };
 		EBE86E2D1A72BE5100D1880C /* MetalDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MetalDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EBE86E311A72BE5100D1880C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		EBE86E321A72BE5200D1880C /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -64,9 +67,19 @@
 			name = camera;
 			sourceTree = "<group>";
 		};
+		EBE5E79E1A74C9ED00C23AE8 /* geometry */ = {
+			isa = PBXGroup;
+			children = (
+				EBE5E79F1A74CA0800C23AE8 /* Primitives.h */,
+				EBE5E7A01A74CA0800C23AE8 /* Primitives.mm */,
+			);
+			name = geometry;
+			sourceTree = "<group>";
+		};
 		EBE86E241A72BE5100D1880C = {
 			isa = PBXGroup;
 			children = (
+				EBE5E79E1A74C9ED00C23AE8 /* geometry */,
 				EB09581B1A7409D600E722D0 /* camera */,
 				EBE86E2F1A72BE5100D1880C /* MetalDemo */,
 				EBE86E2E1A72BE5100D1880C /* Products */,
@@ -193,6 +206,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				EBE86E3B1A72BE5200D1880C /* Shaders.metal in Sources */,
+				EBE5E7A11A74CA0800C23AE8 /* Primitives.mm in Sources */,
 				EBE86E361A72BE5200D1880C /* AppDelegate.m in Sources */,
 				EB09581E1A7409E600E722D0 /* ArcballCamera.mm in Sources */,
 				EB09581A1A73D1DC00E722D0 /* RenderView.mm in Sources */,
