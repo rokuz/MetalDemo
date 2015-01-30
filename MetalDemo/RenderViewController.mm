@@ -274,7 +274,7 @@ typedef struct
     dispatch_semaphore_wait(_renderThreadSemaphore, DISPATCH_TIME_FOREVER);
     [parallelRCE endEncoding];
     
-    __block dispatch_semaphore_t block_sema = _inflightSemaphore;
+    dispatch_semaphore_t block_sema = _inflightSemaphore;
     [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer) {
         dispatch_semaphore_signal(block_sema);
     }];
