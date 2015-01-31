@@ -10,21 +10,12 @@
 #import "math/Math.h"
 #import "camera/ArcballCamera.h"
 #import "geometry/Primitives.h"
+#import "geometry/Mesh.h"
 
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
 
 static const NSUInteger MAX_INFLIGHT_BUFFERS = 3;
-
-static const int CUBE_COUNTS = 5;
-simd::float3 CUBES_POSITIONS[CUBE_COUNTS] =
-{
-    simd::float3 { 0.0f, 0.0f, 0.0f },
-    simd::float3 { 0.0f, 0.0f, 2.0f },
-    simd::float3 { 0.0f, 0.0f, -2.0f },
-    simd::float3 { 2.0f, 0.0f, 0.0f },
-    simd::float3 { -2.0f, 0.0f, 0.0f }
-};
 
 typedef struct
 {
@@ -48,23 +39,24 @@ typedef struct
     id <MTLCommandQueue> _commandQueue;
     id <MTLLibrary> _defaultLibrary;
     id <MTLRenderPipelineState> _pipelineState;
-    id <MTLBuffer> _vertexBuffer;
     id <MTLDepthStencilState> _depthState;
+    Mesh *_mesh;
     id <MTLBuffer> _dynamicUniformBuffer;
     uint8_t _currentUniformBufferIndex;
-    dispatch_semaphore_t _renderThreadSemaphore;
     
     // uniforms
     matrix_float4x4 _projectionMatrix;
     matrix_float4x4 _viewMatrix;
-    uniforms_t _uniform_buffer[CUBE_COUNTS];
+    uniforms_t _uniformBuffer;
 }
 
 #pragma mark - Infrastructure
 
 - (void)dealloc
 {
+    [self cleanup];
     [self stopTimer];
+    _timer = 0;
 }
 
 - (void)initCommon
@@ -114,7 +106,6 @@ typedef struct
     
     _currentUniformBufferIndex = 0;
     _inflightSemaphore = dispatch_semaphore_create(MAX_INFLIGHT_BUFFERS);
-    _renderThreadSemaphore = dispatch_semaphore_create(0);
     
     [self setupMetal: ((RenderView*)self.view).device];
     [self startTimer];
@@ -188,7 +179,7 @@ typedef struct
 - (void)configure:(RenderView*)renderView
 {
     renderView.sampleCount = 1;
-    camera.init(30.0f, -20.0f, 5.0f);
+    camera.init(-50.0f, -20.0f, 35.0f);
 }
 
 - (void)setupMetal:(id<MTLDevice>)device
@@ -199,19 +190,28 @@ typedef struct
     [self loadAssets: device];
 }
 
+- (void)cleanup
+{
+    _mesh = nil;
+    _commandQueue = nil;
+    _defaultLibrary = nil;
+    _pipelineState = nil;
+    _depthState = nil;
+    _dynamicUniformBuffer = nil;
+}
+
 - (void)loadAssets:(id<MTLDevice>)device
 {
-    NSUInteger sz = sizeof(_uniform_buffer) * MAX_INFLIGHT_BUFFERS;
+    NSUInteger sz = sizeof(_uniformBuffer) * MAX_INFLIGHT_BUFFERS;
     _dynamicUniformBuffer = [device newBufferWithLength:sz options:0];
     _dynamicUniformBuffer.label = @"Uniform buffer";
 
     id <MTLFunction> fragmentProgram = [_defaultLibrary newFunctionWithName:@"psLighting"];
     id <MTLFunction> vertexProgram = [_defaultLibrary newFunctionWithName:@"vsLighting"];
     
-    _vertexBuffer = [device newBufferWithBytes:(Primitives::cube())
-                                        length:(Primitives::cubeSizeInBytes())
-                                       options:MTLResourceOptionCPUCacheModeDefault];
-    _vertexBuffer.label = @"Cube vertex buffer";
+    // mesh
+    _mesh = [[Mesh alloc] initWithResourceName:@"spaceship"];
+    [_mesh loadWithDevice:device Asynchronously:YES];
     
     // pipeline state
     MTLRenderPipelineDescriptor *pipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
@@ -247,33 +247,22 @@ typedef struct
     id <MTLCommandBuffer> commandBuffer = [_commandQueue commandBuffer];
     commandBuffer.label = @"Simple command buffer";
     
-    // parallel render encoder
-    id <MTLParallelRenderCommandEncoder> parallelRCE = [commandBuffer parallelRenderCommandEncoderWithDescriptor:renderPassDescriptor];
-    parallelRCE.label = @"Parallel render encoder";
-    id <MTLRenderCommandEncoder> rCE1 = [parallelRCE renderCommandEncoder];
-    id <MTLRenderCommandEncoder> rCE2 = [parallelRCE renderCommandEncoder];
-    
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
+    // render encoder
+    id <MTLRenderCommandEncoder> renderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
+    if (_mesh.isReady)
     {
-        @autoreleasepool
-        {
-            [self encodeRenderCommands: rCE2
-                               Comment: @"Draw cubes in additional thread"
-                            StartIndex: CUBE_COUNTS / 2
-                              EndIndex: CUBE_COUNTS];
-        }
-        dispatch_semaphore_signal(_renderThreadSemaphore);
-    });
-    
-    [self encodeRenderCommands: rCE1
-                       Comment: @"Draw cubes"
-                    StartIndex: 0
-                      EndIndex: CUBE_COUNTS / 2];
+        [renderEncoder setDepthStencilState:_depthState];
+        [renderEncoder pushDebugGroup:@"Draw mesh"];
+        [renderEncoder setRenderPipelineState:_pipelineState];
+        [renderEncoder setVertexBuffer:_mesh.vertexBuffer offset:0 atIndex:0 ];
+        [renderEncoder setVertexBuffer:_dynamicUniformBuffer
+                                offset:(sizeof(_uniformBuffer) * _currentUniformBufferIndex)
+                               atIndex:1 ];
+        [_mesh drawAllWithEncoder:renderEncoder];
+        [renderEncoder popDebugGroup];
+    }
+    [renderEncoder endEncoding];
 
-    // wait additional thread and finish encoding
-    dispatch_semaphore_wait(_renderThreadSemaphore, DISPATCH_TIME_FOREVER);
-    [parallelRCE endEncoding];
-    
     dispatch_semaphore_t block_sema = _inflightSemaphore;
     [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer) {
         dispatch_semaphore_signal(block_sema);
@@ -282,26 +271,6 @@ typedef struct
     _currentUniformBufferIndex = (_currentUniformBufferIndex + 1) % MAX_INFLIGHT_BUFFERS;
     [commandBuffer presentDrawable:drawable];
     [commandBuffer commit];
-}
-
-- (void)encodeRenderCommands:(id <MTLRenderCommandEncoder>)renderEncoder
-                     Comment:(NSString*)comment
-                  StartIndex:(int)startIndex
-                    EndIndex:(int)endIndex
-{
-    [renderEncoder setDepthStencilState:_depthState];
-    [renderEncoder pushDebugGroup:comment];
-    [renderEncoder setRenderPipelineState:_pipelineState];
-    [renderEncoder setVertexBuffer:_vertexBuffer offset:0 atIndex:0 ];
-    for (int i = startIndex; i < endIndex; i++)
-    {
-        [renderEncoder setVertexBuffer:_dynamicUniformBuffer
-                                offset:(sizeof(_uniform_buffer) * _currentUniformBufferIndex + i * sizeof(uniforms_t))
-                               atIndex:1 ];
-        [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:36 instanceCount:1];
-    }
-    [renderEncoder popDebugGroup];
-    [renderEncoder endEncoding];
 }
 
 - (void)resize:(RenderView*)renderView
@@ -314,19 +283,14 @@ typedef struct
 - (void)update
 {
     _viewMatrix = camera.getView();
+    matrix_float4x4 model = Math::rotate(-90, 1, 0, 0);
+    matrix_float4x4 modelViewMatrix = matrix_multiply(_viewMatrix, model);
+    _uniformBuffer.model = model;
+    _uniformBuffer.modelViewProjection = matrix_multiply(_projectionMatrix, modelViewMatrix);
+    _uniformBuffer.viewPosition = camera.getCurrentViewPosition();
     
-    for (int i = 0; i < CUBE_COUNTS; i++)
-    {
-        matrix_float4x4 model = Math::translate(CUBES_POSITIONS[i]);
-        matrix_float4x4 modelViewMatrix = matrix_multiply(_viewMatrix, model);
-    
-        _uniform_buffer[i].model = model;
-        _uniform_buffer[i].modelViewProjection = matrix_multiply(_projectionMatrix, modelViewMatrix);
-        _uniform_buffer[i].viewPosition = camera.getCurrentViewPosition();
-    }
-    
-    uint8_t* bufferPointer = (uint8_t*)[_dynamicUniformBuffer contents] + (sizeof(_uniform_buffer) * _currentUniformBufferIndex);
-    memcpy(bufferPointer, &_uniform_buffer, sizeof(_uniform_buffer));
+    uint8_t* bufferPointer = (uint8_t*)[_dynamicUniformBuffer contents] + (sizeof(_uniformBuffer) * _currentUniformBufferIndex);
+    memcpy(bufferPointer, &_uniformBuffer, sizeof(_uniformBuffer));
 }
 
 #pragma mark - Input handling

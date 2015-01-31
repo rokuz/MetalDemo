@@ -15,7 +15,7 @@
 
 const float ROTATION_SPEED = 0.25f;
 const float MIN_ZOOM = 1.0f;
-const float MAX_ZOOM = 20.0f;
+const float MAX_ZOOM = 70.0f;
 const float ZOOM_SPEED = 0.025f;
 
 ArcballCamera::ArcballCamera()

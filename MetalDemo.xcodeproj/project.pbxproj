@@ -11,6 +11,8 @@
 		EB09581A1A73D1DC00E722D0 /* RenderView.mm in Sources */ = {isa = PBXBuildFile; fileRef = EB0958191A73D1DC00E722D0 /* RenderView.mm */; };
 		EB09581E1A7409E600E722D0 /* ArcballCamera.mm in Sources */ = {isa = PBXBuildFile; fileRef = EB09581D1A7409E600E722D0 /* ArcballCamera.mm */; };
 		EB0958211A7426E000E722D0 /* Quaternion.mm in Sources */ = {isa = PBXBuildFile; fileRef = EB0958201A7426E000E722D0 /* Quaternion.mm */; };
+		EB53A0DF1A7D3E8000E1A557 /* Mesh.mm in Sources */ = {isa = PBXBuildFile; fileRef = EB53A0DE1A7D3E8000E1A557 /* Mesh.mm */; };
+		EB53A0E21A7D744600E1A557 /* spaceship.geom in Resources */ = {isa = PBXBuildFile; fileRef = EB53A0E11A7D744600E1A557 /* spaceship.geom */; };
 		EBE5E7A11A74CA0800C23AE8 /* Primitives.mm in Sources */ = {isa = PBXBuildFile; fileRef = EBE5E7A01A74CA0800C23AE8 /* Primitives.mm */; };
 		EBE86E331A72BE5200D1880C /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = EBE86E321A72BE5200D1880C /* main.m */; };
 		EBE86E361A72BE5200D1880C /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = EBE86E351A72BE5200D1880C /* AppDelegate.m */; };
@@ -30,6 +32,9 @@
 		EB09581D1A7409E600E722D0 /* ArcballCamera.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = ArcballCamera.mm; path = MetalDemo/camera/ArcballCamera.mm; sourceTree = "<group>"; };
 		EB09581F1A741E6F00E722D0 /* Quaternion.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Quaternion.h; path = math/Quaternion.h; sourceTree = "<group>"; };
 		EB0958201A7426E000E722D0 /* Quaternion.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = Quaternion.mm; path = math/Quaternion.mm; sourceTree = "<group>"; };
+		EB53A0DD1A7D3E6800E1A557 /* Mesh.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Mesh.h; path = MetalDemo/geometry/Mesh.h; sourceTree = "<group>"; };
+		EB53A0DE1A7D3E8000E1A557 /* Mesh.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = Mesh.mm; path = MetalDemo/geometry/Mesh.mm; sourceTree = "<group>"; };
+		EB53A0E11A7D744600E1A557 /* spaceship.geom */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; name = spaceship.geom; path = data/spaceship.geom; sourceTree = "<group>"; };
 		EBE5E79F1A74CA0800C23AE8 /* Primitives.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Primitives.h; path = MetalDemo/geometry/Primitives.h; sourceTree = "<group>"; };
 		EBE5E7A01A74CA0800C23AE8 /* Primitives.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = Primitives.mm; path = MetalDemo/geometry/Primitives.mm; sourceTree = "<group>"; };
 		EBE86E2D1A72BE5100D1880C /* MetalDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MetalDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -67,11 +72,21 @@
 			name = camera;
 			sourceTree = "<group>";
 		};
+		EB53A0E01A7D741B00E1A557 /* data */ = {
+			isa = PBXGroup;
+			children = (
+				EB53A0E11A7D744600E1A557 /* spaceship.geom */,
+			);
+			name = data;
+			sourceTree = "<group>";
+		};
 		EBE5E79E1A74C9ED00C23AE8 /* geometry */ = {
 			isa = PBXGroup;
 			children = (
 				EBE5E79F1A74CA0800C23AE8 /* Primitives.h */,
 				EBE5E7A01A74CA0800C23AE8 /* Primitives.mm */,
+				EB53A0DD1A7D3E6800E1A557 /* Mesh.h */,
+				EB53A0DE1A7D3E8000E1A557 /* Mesh.mm */,
 			);
 			name = geometry;
 			sourceTree = "<group>";
@@ -113,6 +128,7 @@
 		EBE86E301A72BE5100D1880C /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
+				EB53A0E01A7D741B00E1A557 /* data */,
 				EBE86E3C1A72BE5200D1880C /* Main.storyboard */,
 				EBE86E3F1A72BE5200D1880C /* Images.xcassets */,
 				EB0958161A73CAC700E722D0 /* rokuzlogo.png */,
@@ -194,6 +210,7 @@
 				EB0958171A73CAC700E722D0 /* rokuzlogo.png in Resources */,
 				EBE86E3E1A72BE5200D1880C /* Main.storyboard in Resources */,
 				EBE86E431A72BE5200D1880C /* LaunchScreen.xib in Resources */,
+				EB53A0E21A7D744600E1A557 /* spaceship.geom in Resources */,
 				EBE86E401A72BE5200D1880C /* Images.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -205,6 +222,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EB53A0DF1A7D3E8000E1A557 /* Mesh.mm in Sources */,
 				EBE86E3B1A72BE5200D1880C /* Shaders.metal in Sources */,
 				EBE5E7A11A74CA0800C23AE8 /* Primitives.mm in Sources */,
 				EBE86E361A72BE5200D1880C /* AppDelegate.m in Sources */,

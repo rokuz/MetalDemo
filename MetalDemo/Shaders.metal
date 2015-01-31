@@ -28,7 +28,9 @@ typedef struct
 {
     packed_float3 position;
     packed_float3 normal;
+    packed_float2 uv;
     packed_float3 tangent;
+    packed_float3 binormal;
 } vertex_t;
 
 typedef struct
