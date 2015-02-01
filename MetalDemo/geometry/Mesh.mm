@@ -88,15 +88,15 @@ const unsigned int MAGIC_GEOM = 0x12345002;
         {
              @autoreleasepool
              {
-                 [self loadFromFileloadWithDevice:device];
+                 [self loadFromFileWithDevice:device];
              }
         });
         return YES;
     }
-    return [self loadFromFileloadWithDevice:device];
+    return [self loadFromFileWithDevice:device];
 }
 
-- (BOOL) loadFromFileloadWithDevice:(id<MTLDevice>)device
+- (BOOL) loadFromFileWithDevice:(id<MTLDevice>)device
 {
     FILE* fp = 0;
     fp = fopen([_path UTF8String], "rb");

@@ -12,8 +12,7 @@
 using namespace metal;
 
 constant float3 lightDirection = float3(0.5, -0.7, -1.0);
-constant float3 ambientColor = float3(0.18, 0.24, 0.8);
-constant float3 diffuseColor = float3(0.4, 0.4, 1.0);
+constant float3 ambientColor = float3(0.1, 0.1, 0.1);
 constant float3 specularColor = float3(0.3, 0.3, 0.3);
 constant float specularPower = 30.0;
 
@@ -36,10 +35,13 @@ typedef struct
 typedef struct
 {
     float4 position [[position]];
+    float2 uv;
     float3 tangent;
     float3 normal;
     float3 viewDirection;
 } ColorInOut;
+
+constexpr sampler trilinearSampler(address::clamp_to_zero, filter::linear, mip_filter::linear);
 
 // Vertex shader function
 vertex ColorInOut vsLighting(device vertex_t* vertex_array [[ buffer(0) ]],
@@ -59,24 +61,29 @@ vertex ColorInOut vsLighting(device vertex_t* vertex_array [[ buffer(0) ]],
     float3 worldPos = (uniforms.model * in_position).xyz;
     out.viewDirection = normalize(worldPos - uniforms.viewPosition);
     
+    out.uv = vertex_array[vid].uv;
+    
     return out;
 }
 
 // Fragment shader function
-fragment half4 psLighting(ColorInOut in [[stage_in]])
+fragment half4 psLighting(ColorInOut in [[stage_in]],
+                          texture2d<half> diffuseTexture[[texture(0)]],
+                          texture2d<half> normalTexture[[texture(1)]])
 {
-    float3 normalTS = float3(0, 0, 1);
+    float3 normalTS = (float3)normalize(normalTexture.sample(trilinearSampler, in.uv).rgb * 2.0 - 1.0);
     float3 lightDir = normalize(lightDirection);
     
     float3x3 ts = float3x3(in.tangent, cross(in.normal, in.tangent), in.normal);
     float3 normal = -normalize(ts * normalTS);
     float ndotl = fmax(0.0, dot(lightDir, normal));
-    float3 diffuse = diffuseColor * ndotl;
+    float3 color = (float3)diffuseTexture.sample(trilinearSampler, in.uv).rgb;
+    float3 diffuse = color * ndotl;
     
     float3 h = normalize(in.viewDirection + lightDir);
-    float3 specular = specularColor * pow (fmax(dot(normal, h), 0.0), specularPower);
+    float3 specular = specularColor * pow(fmax(dot(normal, h), 0.0), specularPower);
     
-    float3 finalColor = saturate(ambientColor + diffuse + specular);
+    float3 finalColor = saturate(color * ambientColor + diffuse + specular);
     
     return half4(float4(finalColor, 1.0));
 }

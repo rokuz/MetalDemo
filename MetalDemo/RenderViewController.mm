@@ -11,6 +11,7 @@
 #import "camera/ArcballCamera.h"
 #import "geometry/Primitives.h"
 #import "geometry/Mesh.h"
+#import "texture/Texture.h"
 
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
@@ -40,7 +41,13 @@ typedef struct
     id <MTLLibrary> _defaultLibrary;
     id <MTLRenderPipelineState> _pipelineState;
     id <MTLDepthStencilState> _depthState;
+    
+    Texture *_defDiffuseTexture;
+    Texture *_defNormalTexture;
+    
     Mesh *_mesh;
+    Texture *_diffuseTexture;
+    Texture *_normalTexture;
     id <MTLBuffer> _dynamicUniformBuffer;
     uint8_t _currentUniformBufferIndex;
     
@@ -198,6 +205,10 @@ typedef struct
     _pipelineState = nil;
     _depthState = nil;
     _dynamicUniformBuffer = nil;
+    _diffuseTexture = nil;
+    _normalTexture = nil;
+    _defDiffuseTexture = nil;
+    _defNormalTexture = nil;
 }
 
 - (void)loadAssets:(id<MTLDevice>)device
@@ -209,9 +220,21 @@ typedef struct
     id <MTLFunction> fragmentProgram = [_defaultLibrary newFunctionWithName:@"psLighting"];
     id <MTLFunction> vertexProgram = [_defaultLibrary newFunctionWithName:@"vsLighting"];
     
+    // default textures
+    _defDiffuseTexture = [[Texture alloc] initWithResourceName:@"default_diff" Extension:@"png"];
+    [_defDiffuseTexture loadWithDevice:device Asynchronously:NO];
+    _defNormalTexture = [[Texture alloc] initWithResourceName:@"default_normal" Extension:@"png"];
+    [_defNormalTexture loadWithDevice:device Asynchronously:NO];
+    
     // mesh
     _mesh = [[Mesh alloc] initWithResourceName:@"spaceship"];
     [_mesh loadWithDevice:device Asynchronously:YES];
+    
+    // textures
+    _diffuseTexture = [[Texture alloc] initWithResourceName:@"spaceship_diff" Extension:@"png"];
+    [_diffuseTexture loadWithDevice:device Asynchronously:YES];
+    _normalTexture = [[Texture alloc] initWithResourceName:@"spaceship_normal" Extension:@"png"];
+    [_normalTexture loadWithDevice:device Asynchronously:YES];
     
     // pipeline state
     MTLRenderPipelineDescriptor *pipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
@@ -247,6 +270,20 @@ typedef struct
     id <MTLCommandBuffer> commandBuffer = [_commandQueue commandBuffer];
     commandBuffer.label = @"Simple command buffer";
     
+    // generate mipmaps
+    if (_diffuseTexture.isReady && !_diffuseTexture.mipMapsGenerated)
+    {
+        id <MTLBlitCommandEncoder> blitEncoder = [commandBuffer blitCommandEncoder];
+        [_diffuseTexture generateMipMaps:blitEncoder];
+        [blitEncoder endEncoding];
+    }
+    if (_normalTexture.isReady && !_normalTexture.mipMapsGenerated)
+    {
+        id <MTLBlitCommandEncoder> blitEncoder = [commandBuffer blitCommandEncoder];
+        [_normalTexture generateMipMaps:blitEncoder];
+        [blitEncoder endEncoding];
+    }
+    
     // render encoder
     id <MTLRenderCommandEncoder> renderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
     if (_mesh.isReady)
@@ -258,6 +295,10 @@ typedef struct
         [renderEncoder setVertexBuffer:_dynamicUniformBuffer
                                 offset:(sizeof(_uniformBuffer) * _currentUniformBufferIndex)
                                atIndex:1 ];
+        [renderEncoder setFragmentTexture:(_diffuseTexture.isReady ? _diffuseTexture.texture : _defDiffuseTexture.texture)
+                                  atIndex:0];
+        [renderEncoder setFragmentTexture:(_normalTexture.isReady ? _normalTexture.texture : _defNormalTexture.texture)
+                                  atIndex:1];
         [_mesh drawAllWithEncoder:renderEncoder];
         [renderEncoder popDebugGroup];
     }
