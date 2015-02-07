@@ -128,10 +128,14 @@
     return YES;
 }
 
-- (void) generateMipMaps:(id<MTLBlitCommandEncoder>)commandEncoder
+- (void) generateMipMapsIfNecessary:(id<MTLCommandBuffer>)commandBuffer
 {
-    if (_mipMapsGenerated) return;
-    [commandEncoder generateMipmapsForTexture:_texture];
+    if (_mipMapsGenerated || !_isReady) return;
+    
+    id <MTLBlitCommandEncoder> blitEncoder = [commandBuffer blitCommandEncoder];
+    [blitEncoder generateMipmapsForTexture:_texture];
+    [blitEncoder endEncoding];
+
     _mipMapsGenerated = YES;
 }
 

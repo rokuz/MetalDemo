@@ -25,7 +25,6 @@
 		EBEC67831A7E0E010080388D /* Texture.mm in Sources */ = {isa = PBXBuildFile; fileRef = EBEC67821A7E0E010080388D /* Texture.mm */; };
 		EBF3621E1A7E8B02000F08D6 /* spaceship_diff.png in Resources */ = {isa = PBXBuildFile; fileRef = EBF3621B1A7E8B02000F08D6 /* spaceship_diff.png */; };
 		EBF3621F1A7E8B02000F08D6 /* spaceship_normal.png in Resources */ = {isa = PBXBuildFile; fileRef = EBF3621C1A7E8B02000F08D6 /* spaceship_normal.png */; };
-		EBF362201A7E8B02000F08D6 /* spaceship_specular.png in Resources */ = {isa = PBXBuildFile; fileRef = EBF3621D1A7E8B02000F08D6 /* spaceship_specular.png */; };
 		EBF362231A7E8C54000F08D6 /* default_diff.png in Resources */ = {isa = PBXBuildFile; fileRef = EBF362211A7E8C54000F08D6 /* default_diff.png */; };
 		EBF362241A7E8C54000F08D6 /* default_normal.png in Resources */ = {isa = PBXBuildFile; fileRef = EBF362221A7E8C54000F08D6 /* default_normal.png */; };
 /* End PBXBuildFile section */
@@ -60,7 +59,6 @@
 		EBEC67821A7E0E010080388D /* Texture.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = Texture.mm; path = MetalDemo/texture/Texture.mm; sourceTree = "<group>"; };
 		EBF3621B1A7E8B02000F08D6 /* spaceship_diff.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = spaceship_diff.png; path = data/spaceship_diff.png; sourceTree = "<group>"; };
 		EBF3621C1A7E8B02000F08D6 /* spaceship_normal.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = spaceship_normal.png; path = data/spaceship_normal.png; sourceTree = "<group>"; };
-		EBF3621D1A7E8B02000F08D6 /* spaceship_specular.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = spaceship_specular.png; path = data/spaceship_specular.png; sourceTree = "<group>"; };
 		EBF362211A7E8C54000F08D6 /* default_diff.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = default_diff.png; path = data/default_diff.png; sourceTree = "<group>"; };
 		EBF362221A7E8C54000F08D6 /* default_normal.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = default_normal.png; path = data/default_normal.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -92,7 +90,6 @@
 				EBF362221A7E8C54000F08D6 /* default_normal.png */,
 				EBF3621B1A7E8B02000F08D6 /* spaceship_diff.png */,
 				EBF3621C1A7E8B02000F08D6 /* spaceship_normal.png */,
-				EBF3621D1A7E8B02000F08D6 /* spaceship_specular.png */,
 				EB53A0E11A7D744600E1A557 /* spaceship.geom */,
 			);
 			name = data;
@@ -243,7 +240,6 @@
 				EBF3621F1A7E8B02000F08D6 /* spaceship_normal.png in Resources */,
 				EB53A0E21A7D744600E1A557 /* spaceship.geom in Resources */,
 				EBE86E401A72BE5200D1880C /* Images.xcassets in Resources */,
-				EBF362201A7E8B02000F08D6 /* spaceship_specular.png in Resources */,
 				EBF362231A7E8C54000F08D6 /* default_diff.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

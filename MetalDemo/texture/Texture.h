@@ -25,6 +25,6 @@
 
 - (BOOL) loadWithDevice:(id<MTLDevice>)device Asynchronously:(BOOL)async;
 
-- (void) generateMipMaps:(id<MTLBlitCommandEncoder>)commandEncoder;
+- (void) generateMipMapsIfNecessary:(id<MTLCommandBuffer>)commandBuffer;
 
 @end

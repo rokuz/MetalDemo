@@ -271,18 +271,8 @@ typedef struct
     commandBuffer.label = @"Simple command buffer";
     
     // generate mipmaps
-    if (_diffuseTexture.isReady && !_diffuseTexture.mipMapsGenerated)
-    {
-        id <MTLBlitCommandEncoder> blitEncoder = [commandBuffer blitCommandEncoder];
-        [_diffuseTexture generateMipMaps:blitEncoder];
-        [blitEncoder endEncoding];
-    }
-    if (_normalTexture.isReady && !_normalTexture.mipMapsGenerated)
-    {
-        id <MTLBlitCommandEncoder> blitEncoder = [commandBuffer blitCommandEncoder];
-        [_normalTexture generateMipMaps:blitEncoder];
-        [blitEncoder endEncoding];
-    }
+    [_diffuseTexture generateMipMapsIfNecessary:commandBuffer];
+    [_normalTexture generateMipMapsIfNecessary:commandBuffer];
     
     // render encoder
     id <MTLRenderCommandEncoder> renderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
