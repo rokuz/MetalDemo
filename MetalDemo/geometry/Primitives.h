@@ -1,5 +1,5 @@
 //
-//  Math.h
+//  Primitives.h
 //  MetalDemo
 //
 //  Created by Roman Kuznetsov on 23.01.15.

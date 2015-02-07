@@ -12,6 +12,7 @@
 #import "geometry/Primitives.h"
 #import "geometry/Mesh.h"
 #import "texture/Texture.h"
+#import "renderer/SkyboxRenderer.h"
 
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
@@ -42,14 +43,19 @@ typedef struct
     id <MTLRenderPipelineState> _pipelineState;
     id <MTLDepthStencilState> _depthState;
     
+    SkyboxRenderer *_skyboxRenderer;
+    
     Texture *_defDiffuseTexture;
     Texture *_defNormalTexture;
     
     Mesh *_mesh;
     Texture *_diffuseTexture;
     Texture *_normalTexture;
+    Texture *_skyboxTexture;
     id <MTLBuffer> _dynamicUniformBuffer;
     uint8_t _currentUniformBufferIndex;
+    
+    dispatch_semaphore_t _renderThreadSemaphore;
     
     // uniforms
     matrix_float4x4 _projectionMatrix;
@@ -191,6 +197,8 @@ typedef struct
 
 - (void)setupMetal:(id<MTLDevice>)device
 {
+    _renderThreadSemaphore = dispatch_semaphore_create(0);
+    
     _commandQueue = [device newCommandQueue];
     _defaultLibrary = [device newDefaultLibrary];
     
@@ -207,34 +215,48 @@ typedef struct
     _dynamicUniformBuffer = nil;
     _diffuseTexture = nil;
     _normalTexture = nil;
+    _skyboxTexture = nil;
     _defDiffuseTexture = nil;
     _defNormalTexture = nil;
+    _skyboxRenderer = nil;
 }
 
 - (void)loadAssets:(id<MTLDevice>)device
 {
-    NSUInteger sz = sizeof(_uniformBuffer) * MAX_INFLIGHT_BUFFERS;
-    _dynamicUniformBuffer = [device newBufferWithLength:sz options:0];
-    _dynamicUniformBuffer.label = @"Uniform buffer";
-
-    id <MTLFunction> fragmentProgram = [_defaultLibrary newFunctionWithName:@"psLighting"];
-    id <MTLFunction> vertexProgram = [_defaultLibrary newFunctionWithName:@"vsLighting"];
-    
     // default textures
     _defDiffuseTexture = [[Texture alloc] initWithResourceName:@"default_diff" Extension:@"png"];
     [_defDiffuseTexture loadWithDevice:device Asynchronously:NO];
     _defNormalTexture = [[Texture alloc] initWithResourceName:@"default_normal" Extension:@"png"];
     [_defNormalTexture loadWithDevice:device Asynchronously:NO];
     
+    // skybox
+    _skyboxRenderer = [[SkyboxRenderer alloc] init];
+    [_skyboxRenderer setupWithView:(RenderView*)self.view
+                           Library:_defaultLibrary InflightBuffersCount:MAX_INFLIGHT_BUFFERS];
+
     // mesh
     _mesh = [[Mesh alloc] initWithResourceName:@"spaceship"];
     [_mesh loadWithDevice:device Asynchronously:YES];
+    
+    // uniform buffer
+    NSUInteger sz = sizeof(_uniformBuffer) * MAX_INFLIGHT_BUFFERS;
+    _dynamicUniformBuffer = [device newBufferWithLength:sz options:0];
+    _dynamicUniformBuffer.label = @"Uniform buffer";
+    
+    // shaders
+    id <MTLFunction> fragmentProgram = [_defaultLibrary newFunctionWithName:@"psLighting"];
+    id <MTLFunction> vertexProgram = [_defaultLibrary newFunctionWithName:@"vsLighting"];
     
     // textures
     _diffuseTexture = [[Texture alloc] initWithResourceName:@"spaceship_diff" Extension:@"png"];
     [_diffuseTexture loadWithDevice:device Asynchronously:YES];
     _normalTexture = [[Texture alloc] initWithResourceName:@"spaceship_normal" Extension:@"png"];
     [_normalTexture loadWithDevice:device Asynchronously:YES];
+    NSArray *skybox = [NSArray arrayWithObjects:@"nightsky_right", @"nightsky_left",
+                                                @"nightsky_top", @"nightsky_bottom",
+                                                @"nightsky_front", @"nightsky_back", nil];
+    _skyboxTexture = [[Texture alloc] initCubeWithResourceNames:skybox Extension:@"jpg"];
+    [_skyboxTexture loadWithDevice:device Asynchronously:YES];
     
     // pipeline state
     MTLRenderPipelineDescriptor *pipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
@@ -247,7 +269,8 @@ typedef struct
     
     NSError* error = NULL;
     _pipelineState = [device newRenderPipelineStateWithDescriptor:pipelineStateDescriptor error:&error];
-    if (!_pipelineState) {
+    if (!_pipelineState)
+    {
         NSLog(@"Failed to created pipeline state, error %@", error);
     }
     
@@ -268,14 +291,35 @@ typedef struct
     
     // new command buffer
     id <MTLCommandBuffer> commandBuffer = [_commandQueue commandBuffer];
-    commandBuffer.label = @"Simple command buffer";
+    commandBuffer.label = @"Command buffer";
     
     // generate mipmaps
     [_diffuseTexture generateMipMapsIfNecessary:commandBuffer];
     [_normalTexture generateMipMapsIfNecessary:commandBuffer];
     
-    // render encoder
-    id <MTLRenderCommandEncoder> renderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
+    // parallel render encoder
+    id <MTLParallelRenderCommandEncoder> parallelRCE = [commandBuffer parallelRenderCommandEncoderWithDescriptor:renderPassDescriptor];
+    parallelRCE.label = @"Parallel render encoder";
+    id <MTLRenderCommandEncoder> skyboxEncoder = [parallelRCE renderCommandEncoder];
+    id <MTLRenderCommandEncoder> renderEncoder = [parallelRCE renderCommandEncoder];
+    
+    // skybox
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
+    {
+        @autoreleasepool
+        {
+            if (_skyboxTexture.isReady)
+            {
+                [_skyboxRenderer renderWithEncoder:skyboxEncoder
+                                           Texture:_skyboxTexture
+                                     IndexOfBuffer:_currentUniformBufferIndex];
+            }
+            [skyboxEncoder endEncoding];
+        }
+        dispatch_semaphore_signal(_renderThreadSemaphore);
+    });
+
+    // scene
     if (_mesh.isReady)
     {
         [renderEncoder setDepthStencilState:_depthState];
@@ -293,6 +337,10 @@ typedef struct
         [renderEncoder popDebugGroup];
     }
     [renderEncoder endEncoding];
+    
+    // wait all threads and finish encoding
+    dispatch_semaphore_wait(_renderThreadSemaphore, DISPATCH_TIME_FOREVER);
+    [parallelRCE endEncoding];
 
     dispatch_semaphore_t block_sema = _inflightSemaphore;
     [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer) {
@@ -314,6 +362,11 @@ typedef struct
 - (void)update
 {
     _viewMatrix = camera.getView();
+    
+    [_skyboxRenderer updateWithCamera:camera
+                           Projection:_projectionMatrix
+                        IndexOfBuffer:_currentUniformBufferIndex];
+    
     matrix_float4x4 model = Math::rotate(-90, 1, 0, 0);
     matrix_float4x4 modelViewMatrix = matrix_multiply(_viewMatrix, model);
     _uniformBuffer.model = model;

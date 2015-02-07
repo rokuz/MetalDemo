@@ -21,7 +21,7 @@ typedef struct
     float4x4 modelViewProjection;
     float4x4 model;
     float3 viewPosition;
-} uniforms_t;
+} Uniforms_T;
 
 typedef struct
 {
@@ -30,7 +30,7 @@ typedef struct
     packed_float2 uv;
     packed_float3 tangent;
     packed_float3 binormal;
-} vertex_t;
+} Vertex_T;
 
 typedef struct
 {
@@ -43,33 +43,33 @@ typedef struct
 
 constexpr sampler trilinearSampler(address::clamp_to_zero, filter::linear, mip_filter::linear);
 
-// Vertex shader function
-vertex ColorInOut vsLighting(device vertex_t* vertex_array [[ buffer(0) ]],
-                             constant uniforms_t& uniforms [[ buffer(1) ]],
+// Basic shading
+
+vertex ColorInOut vsLighting(device Vertex_T* vertexArray [[ buffer(0) ]],
+                             constant Uniforms_T& uniforms [[ buffer(1) ]],
                              unsigned int vid [[ vertex_id ]])
 {
     ColorInOut out;
     
-    float4 in_position = float4(float3(vertex_array[vid].position), 1.0);
+    float4 in_position = float4(float3(vertexArray[vid].position), 1.0);
     out.position = uniforms.modelViewProjection * in_position;
     
     float4x4 m = uniforms.model;
     m[3][0] = m[3][1] = m[3][2] = 0.0f; // suppress translation component
-    out.normal = (m * float4(normalize(vertex_array[vid].normal), 1.0)).xyz;
-    out.tangent = (m * float4(normalize(vertex_array[vid].tangent), 1.0)).xyz;
+    out.normal = (m * float4(normalize(vertexArray[vid].normal), 1.0)).xyz;
+    out.tangent = (m * float4(normalize(vertexArray[vid].tangent), 1.0)).xyz;
     
     float3 worldPos = (uniforms.model * in_position).xyz;
     out.viewDirection = normalize(worldPos - uniforms.viewPosition);
     
-    out.uv = vertex_array[vid].uv;
+    out.uv = vertexArray[vid].uv;
     
     return out;
 }
 
-// Fragment shader function
 fragment half4 psLighting(ColorInOut in [[stage_in]],
-                          texture2d<half> diffuseTexture[[texture(0)]],
-                          texture2d<half> normalTexture[[texture(1)]])
+                          texture2d<half> diffuseTexture [[texture(0)]],
+                          texture2d<half> normalTexture [[texture(1)]])
 {
     float3 normalTS = (float3)normalize(normalTexture.sample(trilinearSampler, in.uv).rgb * 2.0 - 1.0);
     float3 lightDir = normalize(lightDirection);
@@ -86,4 +86,44 @@ fragment half4 psLighting(ColorInOut in [[stage_in]],
     float3 finalColor = saturate(color * ambientColor + diffuse + specular);
     
     return half4(float4(finalColor, 1.0));
+}
+
+// Skybox
+
+typedef struct
+{
+    float4x4 viewProjection;
+} UniformsSkybox_T;
+
+typedef struct
+{
+    packed_float3 position;
+    packed_float3 normal;
+    packed_float3 tangent;
+} VertexSkybox_T;
+
+typedef struct
+{
+    float4 position [[position]];
+    float3 uv;
+} SkyboxInOut;
+
+vertex SkyboxInOut vsSkybox(device VertexSkybox_T* vertexArray [[ buffer(0) ]],
+                            constant UniformsSkybox_T& uniforms [[ buffer(1) ]],
+                            unsigned int vid [[ vertex_id ]])
+{
+    SkyboxInOut out;
+    
+    float4 in_position = float4(float3(vertexArray[vid].position), 1.0);
+    out.position = uniforms.viewProjection * in_position;
+    out.uv = float3(vertexArray[vid].position);
+    
+    return out;
+}
+
+fragment half4 psSkybox(SkyboxInOut in [[stage_in]],
+                        texturecube<half> skyboxTexture [[texture(0)]])
+{
+    float3 c = saturate((float3)skyboxTexture.sample(trilinearSampler, in.uv).rgb);
+    return half4(float4(c, 1.0));
 }

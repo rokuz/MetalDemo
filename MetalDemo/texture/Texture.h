@@ -23,6 +23,9 @@
 - (id) initWithResourceName:(NSString *)name
                   Extension:(NSString *)ext;
 
+- (id) initCubeWithResourceNames:(NSArray *)names
+                       Extension:(NSString *)ext;
+
 - (BOOL) loadWithDevice:(id<MTLDevice>)device Asynchronously:(BOOL)async;
 
 - (void) generateMipMapsIfNecessary:(id<MTLCommandBuffer>)commandBuffer;

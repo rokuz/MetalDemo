@@ -58,6 +58,35 @@ struct ImageData
     return self;
 }
 
+- (instancetype) initCubeWithResourceNames:(NSArray *)names
+                                 Extension:(NSString *)ext
+{
+    if (names.count != 6) return nil;
+    
+    NSMutableArray *paths = [NSMutableArray arrayWithCapacity:names.count];
+    for (int i = 0; i < names.count; i++)
+    {
+        NSString *path = [[NSBundle mainBundle] pathForResource:names[i] ofType:ext];
+        if (!path) return nil;
+        [paths addObject:path];
+    }
+    
+    self = [super init];
+    if(self)
+    {
+        _paths = paths;
+        _width = 0;
+        _height = 0;
+        _depth = 1;
+        _format = MTLPixelFormatRGBA8Unorm;
+        _target = MTLTextureTypeCube;
+        _texture = nil;
+        _isReady = NO;
+        _mipMapsGenerated = NO;
+    }
+    return self;
+}
+
 - (void) dealloc
 {
     _paths = nil;
@@ -128,6 +157,19 @@ struct ImageData
 
 - (BOOL) loadFromFileWithDevice:(id <MTLDevice>)device
 {
+    if (_target == MTLTextureType2D)
+    {
+        [self load2DFromFileWithDevice: device];
+    }
+    else if (_target == MTLTextureTypeCube)
+    {
+        [self loadCubeFromFileWithDevice: device];
+    }
+    return NO;
+}
+
+- (BOOL) load2DFromFileWithDevice:(id <MTLDevice>)device
+{
     ImageData imageData = [Texture loadImageData:_paths[0]];
     if (imageData.pixels == 0) return NO;
     
@@ -156,6 +198,61 @@ struct ImageData
     [_texture replaceRegion:region mipmapLevel:0 withBytes:imageData.pixels bytesPerRow:rowBytes];
     
     [Texture releaseImageData:imageData];
+    _isReady = YES;
+    
+    return YES;
+}
+
+- (BOOL) loadCubeFromFileWithDevice:(id <MTLDevice>)device
+{
+    ImageData imageData = [Texture loadImageData:_paths[0]];
+    if (imageData.pixels == 0) return NO;
+    if (imageData.width != imageData.height) return NO;
+    _width = _height = _depth = imageData.width;
+    
+    MTLTextureDescriptor *texDesc = [MTLTextureDescriptor textureCubeDescriptorWithPixelFormat:_format
+                                                                                          size:_width
+                                                                                     mipmapped:YES];
+    if (!texDesc)
+    {
+        [Texture releaseImageData:imageData];
+        return NO;
+    }
+    
+    _target = texDesc.textureType;
+    _texture = [device newTextureWithDescriptor:texDesc];
+    if (!_texture)
+    {
+        [Texture releaseImageData:imageData];
+        return NO;
+    }
+    
+    uint32_t rowBytes = _width * 4;
+    uint32_t imageBytes = _width * _width * 4;
+    MTLRegion region = MTLRegionMake2D(0, 0, _width, _width);
+    for (int i = 0; i < 6; i++)
+    {
+        if (i > 0)
+        {
+            imageData = [Texture loadImageData:_paths[i]];
+            if (imageData.pixels == 0 || imageData.width != imageData.height)
+            {
+                [Texture releaseImageData:imageData];
+                _texture = nil;
+                return NO;
+            }
+        }
+        
+        [_texture replaceRegion:region
+                    mipmapLevel:0
+                          slice:i
+                      withBytes:imageData.pixels
+                    bytesPerRow:rowBytes
+                  bytesPerImage:imageBytes];
+        
+        [Texture releaseImageData:imageData];
+    }
+    
     _isReady = YES;
     
     return YES;
