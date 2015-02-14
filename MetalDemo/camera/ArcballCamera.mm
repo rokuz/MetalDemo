@@ -14,8 +14,8 @@
 #ifdef __cplusplus
 
 const float ROTATION_SPEED = 0.25f;
-const float MIN_ZOOM = 1.0f;
-const float MAX_ZOOM = 70.0f;
+const float MIN_ZOOM = 10.0f;
+const float MAX_ZOOM = 120.0f;
 const float ZOOM_SPEED = 0.025f;
 
 ArcballCamera::ArcballCamera()
@@ -97,7 +97,7 @@ void ArcballCamera::stopZooming()
     isZooming = false;
 }
 
-matrix_float4x4 ArcballCamera::getView()
+void ArcballCamera::updateView()
 {
     if (isRotating)
     {
@@ -124,9 +124,11 @@ matrix_float4x4 ArcballCamera::getView()
     
     simd::float3 v = rotation.z_direction();
     currentViewPosition = currentDistance * (simd::float3){v.x, v.y, v.z};
-    matrix_float4x4 viewMatrix = Math::lookAt(currentViewPosition, (simd::float3){0, 0, 0}, (simd::float3){0, 1, 0});
-    
-    return viewMatrix;
+}
+
+matrix_float4x4 ArcballCamera::getView() const
+{
+    return Math::lookAt(currentViewPosition, (simd::float3){0, 0, 0}, (simd::float3){0, 1, 0});
 }
 
 simd::float2 ArcballCamera::getLastFingerPosition() const

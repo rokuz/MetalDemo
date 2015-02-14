@@ -17,14 +17,20 @@
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
 
-static const NSUInteger MAX_INFLIGHT_BUFFERS = 3;
+static const int MAX_INFLIGHT_BUFFERS = 3;
+static const int INSTANCES_IN_ROW = 3;
+static const int INSTANCES_COUNT = INSTANCES_IN_ROW * INSTANCES_IN_ROW;
 
 typedef struct
 {
-    matrix_float4x4 modelViewProjection;
-    matrix_float4x4 model;
+    matrix_float4x4 viewProjection;
     simd::float3 viewPosition;
-} uniforms_t;
+} Uniforms_T;
+
+typedef struct
+{
+    matrix_float4x4 model;
+} InstanceUniforms_T;
 
 @implementation RenderViewController
 {
@@ -53,6 +59,7 @@ typedef struct
     Texture *_normalTexture;
     Texture *_skyboxTexture;
     id <MTLBuffer> _dynamicUniformBuffer;
+    id <MTLBuffer> _staticInstancesUniformBuffer;
     uint8_t _currentUniformBufferIndex;
     
     dispatch_semaphore_t _renderThreadSemaphore;
@@ -60,7 +67,8 @@ typedef struct
     // uniforms
     matrix_float4x4 _projectionMatrix;
     matrix_float4x4 _viewMatrix;
-    uniforms_t _uniformBuffer;
+    Uniforms_T _uniformBuffer;
+    InstanceUniforms_T _instancesUniformBuffer[INSTANCES_COUNT];
 }
 
 #pragma mark - Infrastructure
@@ -192,7 +200,7 @@ typedef struct
 - (void)configure:(RenderView*)renderView
 {
     renderView.sampleCount = 1;
-    camera.init(-50.0f, -20.0f, 35.0f);
+    camera.init(-50.0f, -20.0f, 70.0f);
 }
 
 - (void)setupMetal:(id<MTLDevice>)device
@@ -213,6 +221,7 @@ typedef struct
     _pipelineState = nil;
     _depthState = nil;
     _dynamicUniformBuffer = nil;
+    _staticInstancesUniformBuffer = nil;
     _diffuseTexture = nil;
     _normalTexture = nil;
     _skyboxTexture = nil;
@@ -238,10 +247,27 @@ typedef struct
     _mesh = [[Mesh alloc] initWithResourceName:@"spaceship"];
     [_mesh loadWithDevice:device Asynchronously:YES];
     
-    // uniform buffer
+    // uniform buffers
     NSUInteger sz = sizeof(_uniformBuffer) * MAX_INFLIGHT_BUFFERS;
     _dynamicUniformBuffer = [device newBufferWithLength:sz options:0];
     _dynamicUniformBuffer.label = @"Uniform buffer";
+    
+    sz = sizeof(_instancesUniformBuffer);
+    matrix_float4x4 rotMatrix = Math::rotate(-90, 1, 0, 0);
+    int cnt = INSTANCES_IN_ROW / 2 + (INSTANCES_IN_ROW % 2 != 0 ? 1 : 0);
+    int instance = 0;
+    for (int i = -INSTANCES_IN_ROW / 2; i < cnt; i++)
+    {
+        for (int j = -INSTANCES_IN_ROW / 2; j < cnt; j++)
+        {
+            matrix_float4x4 transMatrix = Math::translate(i * 35.0f, 0, j * 35.0f);
+            _instancesUniformBuffer[instance++].model = matrix_multiply(transMatrix, rotMatrix);
+        }
+    }
+    _staticInstancesUniformBuffer= [device newBufferWithBytes:_instancesUniformBuffer
+                                                       length:sz
+                                                      options:MTLResourceOptionCPUCacheModeDefault];
+    _staticInstancesUniformBuffer.label = @"Instances uniform buffer";
     
     // shaders
     id <MTLFunction> fragmentProgram = [_defaultLibrary newFunctionWithName:@"psLighting"];
@@ -325,15 +351,16 @@ typedef struct
         [renderEncoder setDepthStencilState:_depthState];
         [renderEncoder pushDebugGroup:@"Draw mesh"];
         [renderEncoder setRenderPipelineState:_pipelineState];
-        [renderEncoder setVertexBuffer:_mesh.vertexBuffer offset:0 atIndex:0 ];
+        [renderEncoder setVertexBuffer:_mesh.vertexBuffer offset:0 atIndex:0];
         [renderEncoder setVertexBuffer:_dynamicUniformBuffer
                                 offset:(sizeof(_uniformBuffer) * _currentUniformBufferIndex)
-                               atIndex:1 ];
+                               atIndex:1];
+        [renderEncoder setVertexBuffer:_staticInstancesUniformBuffer offset:0 atIndex:2];
         [renderEncoder setFragmentTexture:(_diffuseTexture.isReady ? _diffuseTexture.texture : _defDiffuseTexture.texture)
                                   atIndex:0];
         [renderEncoder setFragmentTexture:(_normalTexture.isReady ? _normalTexture.texture : _defNormalTexture.texture)
                                   atIndex:1];
-        [_mesh drawAllWithEncoder:renderEncoder];
+        [_mesh drawAllInstanced:INSTANCES_COUNT WithEncoder:renderEncoder];
         [renderEncoder popDebugGroup];
     }
     [renderEncoder endEncoding];
@@ -355,22 +382,22 @@ typedef struct
 - (void)resize:(RenderView*)renderView
 {
     float aspect = fabsf(renderView.bounds.size.width / renderView.bounds.size.height);
-    _projectionMatrix = Math::perspectiveFov(65.0f, aspect, 0.1f, 100.0f);
+    _projectionMatrix = Math::perspectiveFov(65.0f, aspect, 0.1f, 1000.0f);
+    
+    camera.updateView();
     _viewMatrix = camera.getView();
 }
 
 - (void)update
 {
-    _viewMatrix = camera.getView();
+    camera.updateView();
     
     [_skyboxRenderer updateWithCamera:camera
                            Projection:_projectionMatrix
                         IndexOfBuffer:_currentUniformBufferIndex];
     
-    matrix_float4x4 model = Math::rotate(-90, 1, 0, 0);
-    matrix_float4x4 modelViewMatrix = matrix_multiply(_viewMatrix, model);
-    _uniformBuffer.model = model;
-    _uniformBuffer.modelViewProjection = matrix_multiply(_projectionMatrix, modelViewMatrix);
+    _viewMatrix = camera.getView();
+    _uniformBuffer.viewProjection = matrix_multiply(_projectionMatrix, _viewMatrix);
     _uniformBuffer.viewPosition = camera.getCurrentViewPosition();
     
     uint8_t* bufferPointer = (uint8_t*)[_dynamicUniformBuffer contents] + (sizeof(_uniformBuffer) * _currentUniformBufferIndex);

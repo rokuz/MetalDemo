@@ -226,4 +226,26 @@ const unsigned int MAGIC_GEOM = 0x12345002;
     }
 }
 
+- (void) drawGroup:(uint32_t)groupIndex
+         Instances:(uint32_t)instances
+       WithEncoder:(id <MTLRenderCommandEncoder>)renderEncoder
+{
+    if (groupIndex >= _groupsCount) return;
+    [renderEncoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle
+                              indexCount:_indicesCountForGroups[groupIndex]
+                               indexType:MTLIndexTypeUInt32
+                             indexBuffer:_indexBuffer
+                       indexBufferOffset:_offsets[groupIndex] * sizeof(unsigned int)
+                           instanceCount:instances];
+}
+
+- (void) drawAllInstanced:(uint32_t)instances
+              WithEncoder:(id <MTLRenderCommandEncoder>)renderEncoder
+{
+    for (uint32_t i = 0; i < _groupsCount; i++)
+    {
+        [self drawGroup:i Instances:instances WithEncoder:renderEncoder];
+    }
+}
+
 @end

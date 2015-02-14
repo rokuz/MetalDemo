@@ -29,5 +29,8 @@
 - (uint32_t) indicesCountForGroup:(uint32_t)groupIndex;
 - (void) drawGroup:(uint32_t)groupIndex WithEncoder:(id <MTLRenderCommandEncoder>)renderEncoder;
 - (void) drawAllWithEncoder:(id <MTLRenderCommandEncoder>)renderEncoder;
+- (void) drawGroup:(uint32_t)groupIndex
+         Instances:(uint32_t)instances WithEncoder:(id <MTLRenderCommandEncoder>)renderEncoder;
+- (void) drawAllInstanced:(uint32_t)instances WithEncoder:(id <MTLRenderCommandEncoder>)renderEncoder;
 
 @end

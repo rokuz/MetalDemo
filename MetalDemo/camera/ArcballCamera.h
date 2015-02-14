@@ -28,7 +28,9 @@ public:
     void updateZooming(float d);
     void stopZooming();
     
-    matrix_float4x4 getView();
+    void updateView();
+    
+    matrix_float4x4 getView() const;
     simd::float3 getCurrentViewPosition() const;
     
     simd::float2 getLastFingerPosition() const;

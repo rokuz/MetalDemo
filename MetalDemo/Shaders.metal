@@ -12,16 +12,20 @@
 using namespace metal;
 
 constant float3 lightDirection = float3(0.5, -0.7, -1.0);
-constant float3 ambientColor = float3(0.1, 0.1, 0.1);
+constant float3 ambientColor = float3(0.2, 0.2, 0.2);
 constant float3 specularColor = float3(0.3, 0.3, 0.3);
 constant float specularPower = 30.0;
 
 typedef struct
 {
-    float4x4 modelViewProjection;
-    float4x4 model;
+    float4x4 viewProjection;
     float3 viewPosition;
 } Uniforms_T;
+
+typedef struct
+{
+    float4x4 model;
+} InstanceUniforms_T;
 
 typedef struct
 {
@@ -47,19 +51,22 @@ constexpr sampler trilinearSampler(address::clamp_to_zero, filter::linear, mip_f
 
 vertex ColorInOut vsLighting(device Vertex_T* vertexArray [[ buffer(0) ]],
                              constant Uniforms_T& uniforms [[ buffer(1) ]],
-                             unsigned int vid [[ vertex_id ]])
+                             constant InstanceUniforms_T* instanceUniforms [[ buffer(2) ]],
+                             unsigned int vid [[ vertex_id ]],
+                             ushort iid [[ instance_id ]])
 {
     ColorInOut out;
     
     float4 in_position = float4(float3(vertexArray[vid].position), 1.0);
-    out.position = uniforms.modelViewProjection * in_position;
+    float4x4 mvp = uniforms.viewProjection * instanceUniforms[iid].model;
+    out.position = mvp * in_position;
     
-    float4x4 m = uniforms.model;
+    float4x4 m = instanceUniforms[iid].model;
     m[3][0] = m[3][1] = m[3][2] = 0.0f; // suppress translation component
     out.normal = (m * float4(normalize(vertexArray[vid].normal), 1.0)).xyz;
     out.tangent = (m * float4(normalize(vertexArray[vid].tangent), 1.0)).xyz;
     
-    float3 worldPos = (uniforms.model * in_position).xyz;
+    float3 worldPos = (instanceUniforms[iid].model * in_position).xyz;
     out.viewDirection = normalize(worldPos - uniforms.viewPosition);
     
     out.uv = vertexArray[vid].uv;
