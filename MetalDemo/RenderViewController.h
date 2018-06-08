@@ -6,15 +6,24 @@
 //  Copyright (c) 2015 rokuz. All rights reserved.
 //
 
+#if defined(TARGET_IOS)
 #import <UIKit/UIKit.h>
-#import "RenderView.h"
+#else
+#import <AppKit/AppKit.h>
+#endif
+#import <MetalKit/MetalKit.h>
 
-@interface RenderViewController : UIViewController<RenderViewDelegate>
+#if defined(TARGET_IOS)
+#define PlatformViewController UIViewController<MTKViewDelegate>
+#else
+#define PlatformViewController NSViewController<MTKViewDelegate>
+#endif
 
-@property (nonatomic, getter=isPaused) BOOL paused;
+@interface RenderViewController : PlatformViewController
+
+@property(nonatomic, getter=isPaused) BOOL paused;
 
 - (void)didEnterBackground;
 - (void)willEnterForeground;
 
 @end
-

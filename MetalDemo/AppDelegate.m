@@ -15,34 +15,28 @@
 
 @implementation AppDelegate
 
-
-- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+- (BOOL)application:(UIApplication *)application
+    didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-    return YES;
+  return YES;
 }
 
-- (void)applicationWillResignActive:(UIApplication *)application
-{
-}
+- (void)applicationWillResignActive:(UIApplication *)application {}
 
 - (void)applicationDidEnterBackground:(UIApplication *)application
 {
-    RenderViewController* controller = (RenderViewController*)self.window.rootViewController;
-    [controller didEnterBackground];
+  RenderViewController * controller = (RenderViewController *)self.window.rootViewController;
+  [controller didEnterBackground];
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application
 {
-    RenderViewController* controller = (RenderViewController*)self.window.rootViewController;
-    [controller willEnterForeground];
+  RenderViewController * controller = (RenderViewController *)self.window.rootViewController;
+  [controller willEnterForeground];
 }
 
-- (void)applicationDidBecomeActive:(UIApplication *)application
-{
-}
+- (void)applicationDidBecomeActive:(UIApplication *)application {}
 
-- (void)applicationWillTerminate:(UIApplication *)application
-{
-}
+- (void)applicationWillTerminate:(UIApplication *)application {}
 
 @end

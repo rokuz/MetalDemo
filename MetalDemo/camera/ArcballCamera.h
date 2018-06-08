@@ -16,41 +16,41 @@
 class ArcballCamera
 {
 public:
-    ArcballCamera();
-    
-    void init(float xangle, float yangle, float distance);
+  ArcballCamera();
 
-    void startRotation(float xpos, float ypos);
-    void updateRotation(float xpos, float ypos);
-    void stopRotation();
-    
-    void startZooming(float d);
-    void updateZooming(float d);
-    void stopZooming();
-    
-    void updateView();
-    
-    matrix_float4x4 getView() const;
-    simd::float3 getCurrentViewPosition() const;
-    
-    simd::float2 getLastFingerPosition() const;
-    bool isRotatingNow() const;
-    bool isZoomingNow() const;
-    
-    void reset();
-    
+  void init(float xangle, float yangle, float distance);
+
+  void startRotation(float xpos, float ypos);
+  void updateRotation(float xpos, float ypos);
+  void stopRotation();
+
+  void startZooming(float d);
+  void updateZooming(float d);
+  void stopZooming();
+
+  void updateView();
+
+  matrix_float4x4 getView() const;
+  simd::float3 getCurrentViewPosition() const;
+
+  simd::float2 getLastFingerPosition() const;
+  bool isRotatingNow() const;
+  bool isZoomingNow() const;
+
+  void reset();
+
 private:
-    bool isRotating;
-    simd::float2 lastFingerPosition;
-    simd::float2 currentFingerPosition;
-    simd::float2 angles;
-    quaternion rotation;
-    
-    bool isZooming;
-    float lastDistance;
-    float currentDistance;
-    
-    simd::float3 currentViewPosition;
+  bool isRotating;
+  simd::float2 lastFingerPosition;
+  simd::float2 currentFingerPosition;
+  simd::float2 angles;
+  quaternion rotation;
+
+  bool isZooming;
+  float lastDistance;
+  float currentDistance;
+
+  simd::float3 currentViewPosition;
 };
 
 #endif
