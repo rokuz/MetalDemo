@@ -26,6 +26,7 @@ public:
 
   void startZooming(float d);
   void updateZooming(float d);
+  void setZoom(float delta);
   void stopZooming();
 
   void updateView();

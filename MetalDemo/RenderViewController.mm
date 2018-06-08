@@ -22,6 +22,7 @@
 static const int MAX_INFLIGHT_BUFFERS = 3;
 static const int INSTANCES_IN_ROW = 3;
 static const int INSTANCES_COUNT = INSTANCES_IN_ROW * INSTANCES_IN_ROW;
+static const int MAX_INSTANCES_COUNT = 256;
 
 typedef struct
 {
@@ -32,7 +33,7 @@ typedef struct
 typedef struct
 {
   matrix_float4x4 model;
-} __attribute__ ((aligned(256))) InstanceUniforms_T;
+} InstanceUniforms_T;
 
 @implementation RenderViewController
 {
@@ -72,7 +73,7 @@ typedef struct
   matrix_float4x4 _projectionMatrix;
   matrix_float4x4 _viewMatrix;
   Uniforms_T _uniformBuffer;
-  InstanceUniforms_T _instancesUniformBuffer[INSTANCES_COUNT];
+  InstanceUniforms_T _instancesUniformBuffer[MAX_INSTANCES_COUNT];
 }
 
 #pragma mark - Infrastructure
@@ -409,6 +410,13 @@ typedef struct
   memcpy(bufferPointer, &_uniformBuffer, sizeof(_uniformBuffer));
 }
 
+#if !defined(TARGET_IOS)
+- (IBAction)onQuit:(id)sender
+{
+  [[NSApplication sharedApplication] terminate:self];
+}
+#endif
+
 #pragma mark - Input handling
 #if defined(TARGET_IOS)
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
@@ -463,6 +471,35 @@ typedef struct
 {
   camera.stopRotation();
   camera.stopZooming();
+}
+#else
+- (void)mouseDown:(NSEvent *)event
+{
+  if (!camera.isRotatingNow())
+  {
+    NSPoint pos = event.locationInWindow;
+    camera.startRotation(pos.x, pos.y);
+  }
+}
+
+- (void)mouseDragged:(NSEvent *)event
+{
+  if (camera.isRotatingNow())
+  {
+    NSPoint pos = event.locationInWindow;
+    camera.updateRotation(pos.x, pos.y);
+  }
+}
+
+- (void)mouseUp:(NSEvent *)event
+{
+  camera.stopRotation();
+  camera.stopZooming();
+}
+
+- (void)scrollWheel:(NSEvent *)event
+{
+  camera.setZoom(event.scrollingDeltaY);
 }
 #endif
 @end

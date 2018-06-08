@@ -82,6 +82,15 @@ void ArcballCamera::startZooming(float d)
   isZooming = true;
 }
 
+void ArcballCamera::setZoom(float delta)
+{
+  currentDistance += delta * ZOOM_SPEED;
+  if (currentDistance < MIN_ZOOM)
+    currentDistance = MIN_ZOOM;
+  if (currentDistance > MAX_ZOOM)
+    currentDistance = MAX_ZOOM;
+}
+
 void ArcballCamera::updateZooming(float d)
 {
   if (isZooming)

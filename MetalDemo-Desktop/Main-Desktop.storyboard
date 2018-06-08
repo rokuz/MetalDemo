@@ -8,7 +8,7 @@
         <!--Window Controller-->
         <scene sceneID="q7f-MN-5PG">
             <objects>
-                <windowController id="ZMt-MN-QmS" sceneMemberID="viewController">
+                <windowController showSeguePresentationStyle="single" id="ZMt-MN-QmS" sceneMemberID="viewController">
                     <window key="window" title="Metal Desktop Demo" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" oneShot="NO" releasedWhenClosed="NO" showsToolbarButton="NO" visibleAtLaunch="NO" frameAutosaveName="" animationBehavior="default" id="qk1-3A-THx">
                         <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
                         <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
@@ -24,18 +24,34 @@
                 </windowController>
                 <customObject id="67J-e1-bLH" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-169" y="-462"/>
+            <point key="canvasLocation" x="-169.5" y="-462"/>
         </scene>
         <!--Render View Controller-->
         <scene sceneID="jEW-fn-ped">
             <objects>
-                <viewController id="WAp-xK-H0g" customClass="RenderViewController" sceneMemberID="viewController">
+                <viewController showSeguePresentationStyle="single" id="WAp-xK-H0g" customClass="RenderViewController" sceneMemberID="viewController">
                     <view key="view" id="w2M-jA-9Np" customClass="MTKView">
                         <rect key="frame" x="0.0" y="0.0" width="1024" height="768"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </view>
                 </viewController>
                 <customObject id="4IC-8c-CAs" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
+                <menu title="Main Menu" systemMenu="main" id="OOK-2L-P0k">
+                    <items>
+                        <menuItem title="Metal Desktop Demo" id="YvZ-LT-kO6">
+                            <modifierMask key="keyEquivalentModifierMask"/>
+                            <menu key="submenu" title="Metal Desktop Demo" systemMenu="apple" id="NuI-QQ-mYG">
+                                <items>
+                                    <menuItem title="Quit" keyEquivalent="q" id="Ggv-sl-y7b">
+                                        <connections>
+                                            <action selector="onQuit:" target="WAp-xK-H0g" id="d1b-LP-syk"/>
+                                        </connections>
+                                    </menuItem>
+                                </items>
+                            </menu>
+                        </menuItem>
+                    </items>
+                </menu>
             </objects>
             <point key="canvasLocation" x="828.5" y="-312"/>
         </scene>
