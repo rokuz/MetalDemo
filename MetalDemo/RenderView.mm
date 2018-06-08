@@ -98,6 +98,7 @@
                                                                                         mipmapped: NO];
             desc.textureType = MTLTextureType2DMultisample;
             desc.sampleCount = _sampleCount;
+            desc.usage = MTLTextureUsageRenderTarget;
             _msaaTexture = [_device newTextureWithDescriptor: desc];
             _msaaTexture.label = @"Default MSAA render target";
         }
@@ -123,6 +124,7 @@
                                                                                         mipmapped: NO];
             desc.textureType = (_sampleCount > 1) ? MTLTextureType2DMultisample : MTLTextureType2D;
             desc.sampleCount = _sampleCount;
+            desc.usage = MTLTextureUsageRenderTarget;
             
             _depthTexture = [_device newTextureWithDescriptor: desc];
             _depthTexture.label = @"Default depth buffer";
