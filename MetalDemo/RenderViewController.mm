@@ -18,6 +18,9 @@
 #import <MetalKit/MetalKit.h>
 
 #include <algorithm>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
 
 static const int MAX_INFLIGHT_BUFFERS = 3;
 static const int INSTANCES_IN_ROW = 3;
@@ -48,7 +51,7 @@ typedef struct
   CFTimeInterval _frameTime;
   
   // renderer
-  ArcballCamera camera;
+  ArcballCamera _camera;
   id<MTLCommandQueue> _commandQueue;
   id<MTLLibrary> _defaultLibrary;
   id<MTLRenderPipelineState> _pipelineState;
@@ -66,7 +69,7 @@ typedef struct
   id<MTLBuffer> _dynamicUniformBuffer;
   id<MTLBuffer> _staticInstancesUniformBuffer;
   uint8_t _currentUniformBufferIndex;
-
+  
   dispatch_semaphore_t _renderThreadSemaphore;
 
   // uniforms
@@ -190,7 +193,7 @@ typedef struct
 
 - (void)configure
 {
-  camera.init(-50.0f, -20.0f, 70.0f);
+  _camera.init(-50.0f, -20.0f, 70.0f);
   [self resize];
 }
 
@@ -317,7 +320,6 @@ typedef struct
   id<MTLCommandBuffer> commandBuffer = [_commandQueue commandBuffer];
   commandBuffer.label = @"Command buffer";
   
-
   // generate mipmaps
   [_diffuseTexture generateMipMapsIfNecessary:commandBuffer];
   [_normalTexture generateMipMapsIfNecessary:commandBuffer];
@@ -335,17 +337,14 @@ typedef struct
 
   // skybox
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    @autoreleasepool
+    if (self->_skyboxTexture.isReady)
     {
-      if (_skyboxTexture.isReady)
-      {
-        [_skyboxRenderer renderWithEncoder:skyboxEncoder
-                                   Texture:_skyboxTexture
-                             IndexOfBuffer:_currentUniformBufferIndex];
-      }
-      [skyboxEncoder endEncoding];
+      [self->_skyboxRenderer renderWithEncoder:skyboxEncoder
+                                       Texture:self->_skyboxTexture
+                                 IndexOfBuffer:self->_currentUniformBufferIndex];
     }
-    dispatch_semaphore_signal(_renderThreadSemaphore);
+    [skyboxEncoder endEncoding];
+    dispatch_semaphore_signal(self->_renderThreadSemaphore);
   });
   
   // scene
@@ -389,21 +388,21 @@ typedef struct
   float aspect = std::abs(_viewportSize.width / _viewportSize.height);
   _projectionMatrix = Math::perspectiveFov(65.0f, aspect, 0.1f, 1000.0f);
 
-  camera.updateView();
-  _viewMatrix = camera.getView();
+  _camera.updateView();
+  _viewMatrix = _camera.getView();
 }
 
 - (void)update
 {
-  camera.updateView();
+  _camera.updateView();
 
-  [_skyboxRenderer updateWithCamera:camera
+  [_skyboxRenderer updateWithCamera:_camera
                          Projection:_projectionMatrix
                       IndexOfBuffer:_currentUniformBufferIndex];
 
-  _viewMatrix = camera.getView();
+  _viewMatrix = _camera.getView();
   _uniformBuffer.viewProjection = matrix_multiply(_projectionMatrix, _viewMatrix);
-  _uniformBuffer.viewPosition = camera.getCurrentViewPosition();
+  _uniformBuffer.viewPosition = _camera.getCurrentViewPosition();
 
   uint8_t * bufferPointer = (uint8_t *)[_dynamicUniformBuffer contents] +
                             (sizeof(_uniformBuffer) * _currentUniformBufferIndex);
@@ -424,19 +423,19 @@ typedef struct
   NSArray * touchesArray = [touches allObjects];
   if (touches.count == 1)
   {
-    if (!camera.isRotatingNow())
+    if (!_camera.isRotatingNow())
     {
       CGPoint pos = [touchesArray[0] locationInView:self.view];
-      camera.startRotation(pos.x, pos.y);
+      _camera.startRotation(pos.x, pos.y);
     }
     else
     {
       // here we put second finger
-      simd::float2 lastPos = camera.getLastFingerPosition();
-      camera.stopRotation();
+      simd::float2 lastPos = _camera.getLastFingerPosition();
+      _camera.stopRotation();
       CGPoint pos = [touchesArray[0] locationInView:self.view];
       float d = vector_distance(simd::float2{(float)pos.x, (float)pos.y}, lastPos);
-      camera.startZooming(d);
+      _camera.startZooming(d);
     }
   }
   else if (touches.count == 2)
@@ -445,61 +444,61 @@ typedef struct
     CGPoint pos2 = [touchesArray[1] locationInView:self.view];
     float d = vector_distance(simd::float2{(float)pos1.x, (float)pos1.y},
                               simd::float2{(float)pos2.x, (float)pos2.y});
-    camera.startZooming(d);
+    _camera.startZooming(d);
   }
 }
 
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
 {
   NSArray * touchesArray = [touches allObjects];
-  if (touches.count != 0 && camera.isRotatingNow())
+  if (touches.count != 0 && _camera.isRotatingNow())
   {
     CGPoint pos = [touchesArray[0] locationInView:self.view];
-    camera.updateRotation(pos.x, pos.y);
+    _camera.updateRotation(pos.x, pos.y);
   }
-  else if (touches.count == 2 && camera.isZoomingNow())
+  else if (touches.count == 2 && _camera.isZoomingNow())
   {
     CGPoint pos1 = [touchesArray[0] locationInView:self.view];
     CGPoint pos2 = [touchesArray[1] locationInView:self.view];
     float d = vector_distance(simd::float2{(float)pos1.x, (float)pos1.y},
                               simd::float2{(float)pos2.x, (float)pos2.y});
-    camera.updateZooming(d);
+    _camera.updateZooming(d);
   }
 }
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
-  camera.stopRotation();
-  camera.stopZooming();
+  _camera.stopRotation();
+  _camera.stopZooming();
 }
 #else
 - (void)mouseDown:(NSEvent *)event
 {
-  if (!camera.isRotatingNow())
+  if (!_camera.isRotatingNow())
   {
     NSPoint pos = event.locationInWindow;
-    camera.startRotation(pos.x, pos.y);
+    _camera.startRotation(pos.x, pos.y);
   }
 }
 
 - (void)mouseDragged:(NSEvent *)event
 {
-  if (camera.isRotatingNow())
+  if (_camera.isRotatingNow())
   {
     NSPoint pos = event.locationInWindow;
-    camera.updateRotation(pos.x, pos.y);
+    _camera.updateRotation(pos.x, pos.y);
   }
 }
 
 - (void)mouseUp:(NSEvent *)event
 {
-  camera.stopRotation();
-  camera.stopZooming();
+  _camera.stopRotation();
+  _camera.stopZooming();
 }
 
 - (void)scrollWheel:(NSEvent *)event
 {
-  camera.setZoom(event.scrollingDeltaY);
+  _camera.setZoom(event.scrollingDeltaY);
 }
 #endif
 @end
