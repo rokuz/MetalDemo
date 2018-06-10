@@ -16,7 +16,6 @@ namespace Primitives
 float * cube();
 unsigned int cubeSizeInBytes();
 unsigned int cubeVertexSizeInBytes();
-
 }  // namespace Primitives
 
 #endif

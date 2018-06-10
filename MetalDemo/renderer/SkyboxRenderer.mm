@@ -45,35 +45,38 @@ typedef struct
   return self;
 }
 
-- (void)setupWithView:(MTKView *)view
-              Library:(id<MTLLibrary>)library
- InflightBuffersCount:(NSUInteger)buffersCount
+- (void)setupWithDevice:(id<MTLDevice>)device
+                Library:(id<MTLLibrary>)library
+           SamplesCount:(NSUInteger)samplesCount
+            ColorFormat:(MTLPixelFormat)colorFormat
+            DepthFormat:(MTLPixelFormat)depthFormat
+   InflightBuffersCount:(NSUInteger)buffersCount
 {
   NSUInteger sz = sizeof(_uniformBuffer) * buffersCount;
-  _dynamicUniformBuffer = [view.device newBufferWithLength:sz options:0];
+  _dynamicUniformBuffer = [device newBufferWithLength:sz options:0];
   _dynamicUniformBuffer.label = @"Skybox uniform buffer";
 
   id<MTLFunction> fragmentProgram = [library newFunctionWithName:@"psSkybox"];
   id<MTLFunction> vertexProgram = [library newFunctionWithName:@"vsSkybox"];
 
-  _vertexBuffer = [view.device newBufferWithBytes:(Primitives::cube())
-                                           length:(Primitives::cubeSizeInBytes())
-                                          options:MTLResourceOptionCPUCacheModeDefault];
+  _vertexBuffer = [device newBufferWithBytes:(Primitives::cube())
+                                      length:(Primitives::cubeSizeInBytes())
+                                     options:MTLResourceOptionCPUCacheModeDefault];
   _vertexBuffer.label = @"Skybox vertex buffer";
 
   // pipeline state
   MTLRenderPipelineDescriptor * pipelineStateDescriptor =
       [[MTLRenderPipelineDescriptor alloc] init];
   pipelineStateDescriptor.label = @"Skybox pipeline";
-  [pipelineStateDescriptor setSampleCount:view.sampleCount];
+  [pipelineStateDescriptor setSampleCount:samplesCount];
   [pipelineStateDescriptor setVertexFunction:vertexProgram];
   [pipelineStateDescriptor setFragmentFunction:fragmentProgram];
-  pipelineStateDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat;
-  pipelineStateDescriptor.depthAttachmentPixelFormat = view.depthStencilPixelFormat;
+  pipelineStateDescriptor.colorAttachments[0].pixelFormat = colorFormat;
+  pipelineStateDescriptor.depthAttachmentPixelFormat = depthFormat;
 
   NSError * error = NULL;
   _pipelineState =
-      [view.device newRenderPipelineStateWithDescriptor:pipelineStateDescriptor error:&error];
+      [device newRenderPipelineStateWithDescriptor:pipelineStateDescriptor error:&error];
   if (!_pipelineState)
   {
     NSLog(@"Failed to created skybox pipeline state, error %@", error);
@@ -82,7 +85,7 @@ typedef struct
   MTLDepthStencilDescriptor * depthStateDesc = [[MTLDepthStencilDescriptor alloc] init];
   depthStateDesc.depthCompareFunction = MTLCompareFunctionAlways;
   depthStateDesc.depthWriteEnabled = NO;
-  _depthState = [view.device newDepthStencilStateWithDescriptor:depthStateDesc];
+  _depthState = [device newDepthStencilStateWithDescriptor:depthStateDesc];
 }
 
 - (void)updateWithCamera:(ArcballCamera &)camera

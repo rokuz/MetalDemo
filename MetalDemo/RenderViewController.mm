@@ -119,7 +119,7 @@ typedef struct
 
 - (void)viewDidLoad
 {
-  _sampleCount = 1;
+  _sampleCount = 4;
   
   [super viewDidLoad];
   _view = (MTKView *)self.view;
@@ -234,9 +234,12 @@ typedef struct
 
   // skybox
   _skyboxRenderer = [[SkyboxRenderer alloc] init];
-  [_skyboxRenderer setupWithView:_view
-                         Library:_defaultLibrary
-            InflightBuffersCount:MAX_INFLIGHT_BUFFERS];
+  [_skyboxRenderer setupWithDevice:_view.device
+                           Library:_defaultLibrary
+                      SamplesCount:_sampleCount
+                       ColorFormat:_view.colorPixelFormat
+                       DepthFormat:_view.depthStencilPixelFormat
+              InflightBuffersCount:MAX_INFLIGHT_BUFFERS];
 
   // mesh
   _mesh = [[Mesh alloc] initWithResourceName:@"spaceship"];
@@ -283,7 +286,7 @@ typedef struct
   MTLRenderPipelineDescriptor * pipelineStateDescriptor =
       [[MTLRenderPipelineDescriptor alloc] init];
   pipelineStateDescriptor.label = @"Simple pipeline";
-  [pipelineStateDescriptor setSampleCount:_sampleCount];
+  [pipelineStateDescriptor setRasterSampleCount:_sampleCount];
   [pipelineStateDescriptor setVertexFunction:vertexProgram];
   [pipelineStateDescriptor setFragmentFunction:fragmentProgram];
   pipelineStateDescriptor.colorAttachments[0].pixelFormat = _view.colorPixelFormat;
@@ -305,82 +308,87 @@ typedef struct
 
 - (void)render
 {
-  [self update];
-
-  MTLRenderPassDescriptor * renderPassDescriptor = _view.currentRenderPassDescriptor;
-  if(renderPassDescriptor == nil)
-    return;
-  
-  if(_view.currentDrawable == nil)
-    return;
-  
-  dispatch_semaphore_wait(_inflightSemaphore, DISPATCH_TIME_FOREVER);
-
-  // new command buffer
-  id<MTLCommandBuffer> commandBuffer = [_commandQueue commandBuffer];
-  commandBuffer.label = @"Command buffer";
-  
-  // generate mipmaps
-  [_diffuseTexture generateMipMapsIfNecessary:commandBuffer];
-  [_normalTexture generateMipMapsIfNecessary:commandBuffer];
-
-  // parallel render encoder
-  id<MTLParallelRenderCommandEncoder> parallelRCE =
-      [commandBuffer parallelRenderCommandEncoderWithDescriptor:renderPassDescriptor];
-  parallelRCE.label = @"Parallel render encoder";
-  
-  id<MTLRenderCommandEncoder> skyboxEncoder = [parallelRCE renderCommandEncoder];
-  [skyboxEncoder setViewport:(MTLViewport){0.0, 0.0, _viewportSize.width, _viewportSize.height, -1.0, 1.0 }];
-
-  id<MTLRenderCommandEncoder> renderEncoder = [parallelRCE renderCommandEncoder];
-  [renderEncoder setViewport:(MTLViewport){0.0, 0.0, _viewportSize.width, _viewportSize.height, -1.0, 1.0 }];
-
-  // skybox
-  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    if (self->_skyboxTexture.isReady)
-    {
-      [self->_skyboxRenderer renderWithEncoder:skyboxEncoder
-                                       Texture:self->_skyboxTexture
-                                 IndexOfBuffer:self->_currentUniformBufferIndex];
-    }
-    [skyboxEncoder endEncoding];
-    dispatch_semaphore_signal(self->_renderThreadSemaphore);
-  });
-  
-  // scene
-  if (_mesh.isReady)
+  @autoreleasepool
   {
-    [renderEncoder setDepthStencilState:_depthState];
-    [renderEncoder pushDebugGroup:@"Draw mesh"];
-    [renderEncoder setRenderPipelineState:_pipelineState];
-    [renderEncoder setVertexBuffer:_mesh.vertexBuffer offset:0 atIndex:0];
-    [renderEncoder setVertexBuffer:_dynamicUniformBuffer
-                            offset:(sizeof(_uniformBuffer) * _currentUniformBufferIndex)
-                           atIndex:1];
-    [renderEncoder setVertexBuffer:_staticInstancesUniformBuffer offset:0 atIndex:2];
-    [renderEncoder setFragmentTexture:(_diffuseTexture.isReady ? _diffuseTexture.texture
-                                                               : _defDiffuseTexture.texture)
-                              atIndex:0];
-    [renderEncoder setFragmentTexture:(_normalTexture.isReady ? _normalTexture.texture
-                                                              : _defNormalTexture.texture)
-                              atIndex:1];
-    [_mesh drawAllInstanced:INSTANCES_COUNT WithEncoder:renderEncoder];
-    [renderEncoder popDebugGroup];
+    [self update];
+    MTLRenderPassDescriptor * renderPassDescriptor = _view.currentRenderPassDescriptor;
+    if(renderPassDescriptor == nil)
+      return;
+    
+    if(_view.currentDrawable == nil)
+      return;
+    
+    dispatch_semaphore_wait(_inflightSemaphore, DISPATCH_TIME_FOREVER);
+    
+    // new command buffer
+    id<MTLCommandBuffer> commandBuffer = [_commandQueue commandBuffer];
+    commandBuffer.label = @"Command buffer";
+    
+    // generate mipmaps
+    [_diffuseTexture generateMipMapsIfNecessary:commandBuffer];
+    [_normalTexture generateMipMapsIfNecessary:commandBuffer];
+    
+    // parallel render encoder
+    id<MTLParallelRenderCommandEncoder> parallelRCE =
+    [commandBuffer parallelRenderCommandEncoderWithDescriptor:renderPassDescriptor];
+    parallelRCE.label = @"Parallel render encoder";
+    
+    id<MTLRenderCommandEncoder> skyboxEncoder = [parallelRCE renderCommandEncoder];
+    [skyboxEncoder setViewport:(MTLViewport){0.0, 0.0, _viewportSize.width, _viewportSize.height, -1.0, 1.0 }];
+    
+    id<MTLRenderCommandEncoder> renderEncoder = [parallelRCE renderCommandEncoder];
+    [renderEncoder setViewport:(MTLViewport){0.0, 0.0, _viewportSize.width, _viewportSize.height, -1.0, 1.0 }];
+    
+    // skybox
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+      @autoreleasepool
+      {
+        if (self->_skyboxTexture.isReady)
+        {
+          [self->_skyboxRenderer renderWithEncoder:skyboxEncoder
+                                           Texture:self->_skyboxTexture
+                                     IndexOfBuffer:self->_currentUniformBufferIndex];
+        }
+        [skyboxEncoder endEncoding];
+        dispatch_semaphore_signal(self->_renderThreadSemaphore);
+      }
+    });
+    
+    // scene
+    if (_mesh.isReady)
+    {
+      [renderEncoder setDepthStencilState:_depthState];
+      [renderEncoder pushDebugGroup:@"Draw mesh"];
+      [renderEncoder setRenderPipelineState:_pipelineState];
+      [renderEncoder setVertexBuffer:_mesh.vertexBuffer offset:0 atIndex:0];
+      [renderEncoder setVertexBuffer:_dynamicUniformBuffer
+                              offset:(sizeof(_uniformBuffer) * _currentUniformBufferIndex)
+                             atIndex:1];
+      [renderEncoder setVertexBuffer:_staticInstancesUniformBuffer offset:0 atIndex:2];
+      [renderEncoder setFragmentTexture:(_diffuseTexture.isReady ? _diffuseTexture.texture
+                                         : _defDiffuseTexture.texture)
+                                atIndex:0];
+      [renderEncoder setFragmentTexture:(_normalTexture.isReady ? _normalTexture.texture
+                                         : _defNormalTexture.texture)
+                                atIndex:1];
+      [_mesh drawAllInstanced:INSTANCES_COUNT WithEncoder:renderEncoder];
+      [renderEncoder popDebugGroup];
+    }
+    [renderEncoder endEncoding];
+    
+    // wait all threads and finish encoding
+    dispatch_semaphore_wait(_renderThreadSemaphore, DISPATCH_TIME_FOREVER);
+    [parallelRCE endEncoding];
+    
+    dispatch_semaphore_t block_sema = _inflightSemaphore;
+    [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer) {
+      dispatch_semaphore_signal(block_sema);
+    }];
+    
+    _currentUniformBufferIndex = (_currentUniformBufferIndex + 1) % MAX_INFLIGHT_BUFFERS;
+    [commandBuffer presentDrawable:_view.currentDrawable];
+    [commandBuffer commit];
   }
-  [renderEncoder endEncoding];
-
-  // wait all threads and finish encoding
-  dispatch_semaphore_wait(_renderThreadSemaphore, DISPATCH_TIME_FOREVER);
-  [parallelRCE endEncoding];
-
-  dispatch_semaphore_t block_sema = _inflightSemaphore;
-  [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer) {
-    dispatch_semaphore_signal(block_sema);
-  }];
-
-  _currentUniformBufferIndex = (_currentUniformBufferIndex + 1) % MAX_INFLIGHT_BUFFERS;
-  [commandBuffer presentDrawable:_view.currentDrawable];
-  [commandBuffer commit];
 }
 
 - (void)resize

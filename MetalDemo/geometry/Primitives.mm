@@ -48,7 +48,6 @@ float * cube() { return cubeVertexData; }
 unsigned int cubeSizeInBytes() { return sizeof(cubeVertexData); }
 
 unsigned int cubeVertexSizeInBytes() { return 6 * sizeof(float); }
-
 }
 
 #endif

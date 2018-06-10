@@ -15,9 +15,12 @@
 
 @interface SkyboxRenderer : NSObject
 
-- (void)setupWithView:(MTKView *)view
-              Library:(id<MTLLibrary>)library
- InflightBuffersCount:(NSUInteger)buffersCount;
+- (void)setupWithDevice:(id<MTLDevice>)device
+                Library:(id<MTLLibrary>)library
+           SamplesCount:(NSUInteger)samplesCount
+            ColorFormat:(MTLPixelFormat)colorFormat
+            DepthFormat:(MTLPixelFormat)depthFormat
+   InflightBuffersCount:(NSUInteger)buffersCount;
 
 - (void)updateWithCamera:(ArcballCamera &)camera
               Projection:(const matrix_float4x4 &)projection
